@@ -1,3 +1,7 @@
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
+
+@Parcelize
 data class PickupItem(
     val idPickup: Int,
     val name: String,
@@ -7,4 +11,4 @@ data class PickupItem(
     val state: String,
     val productId: Int,
     val productName: String
-)
+) : Parcelable

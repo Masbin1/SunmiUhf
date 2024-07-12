@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -15,6 +16,7 @@ import com.android.volley.Request
 import com.android.volley.RequestQueue
 import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
+import com.sunmi.uhf.fragment.takeinventory.TakeInventoryFragment
 import com.android.volley.toolbox.Volley
 import com.sunmi.uhf.R
 import org.json.JSONArray
@@ -35,18 +37,26 @@ class PickupFragment : Fragment() {
         recyclerView = view.findViewById(R.id.recyclerViewPickup)
         recyclerView.layoutManager = LinearLayoutManager(context)
         pickupAdapter = PickupAdapter(pickupList) { pickupItem ->
-            // Handle item click
-            Toast.makeText(context, "Clicked: ${pickupItem.name}", Toast.LENGTH_SHORT).show()
+            openTakeInventoryFragment(pickupItem)
         }
         recyclerView.adapter = pickupAdapter
 
-        val button: Button = view.findViewById(R.id.get_mylist_pickup)
-        button.setOnClickListener {
+        val textView: TextView = view.findViewById(R.id.get_mylist_pickup)
+        textView.setOnClickListener {
             fetchDataFromApi()
         }
 
         return view
     }
+
+    private fun openTakeInventoryFragment(pickupItem: PickupItem) {
+        val takeInventoryFragment = TakeInventoryFragment.newInstance(pickupItem)
+        parentFragmentManager.beginTransaction()
+            .replace(R.id.frameLayoutPickup, takeInventoryFragment)
+            .addToBackStack(null)
+            .commit()
+    }
+
 
     private fun fetchDataFromApi() {
         val queue: RequestQueue = Volley.newRequestQueue(activity)

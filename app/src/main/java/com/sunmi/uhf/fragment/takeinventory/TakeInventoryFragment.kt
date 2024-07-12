@@ -1,5 +1,6 @@
 package com.sunmi.uhf.fragment.takeinventory
 
+import PickupItem
 import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -11,7 +12,10 @@ import android.os.Environment
 import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
+import android.view.LayoutInflater
 import android.widget.PopupWindow
+import android.widget.TextView
+import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
@@ -48,6 +52,7 @@ import kotlin.math.min
  * @UpdateDate: 20-9-9 下午1:38
  */
 class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
+    private var pickupItem: PickupItem? = null
     private var dialog: SureBackDialog? = null
     lateinit var vm: TakeInventoryModel
     private var isLoop = false
@@ -792,10 +797,54 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         }
     }
 
-    companion object {
-        fun newInstance(args: Bundle?) = TakeInventoryFragment()
-            .apply { arguments = args }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        arguments?.let {
+            pickupItem = it.getParcelable(ARG_PICKUP_ITEM)
+        }
+    }
 
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        val view = super.onCreateView(inflater, container, savedInstanceState)
+
+        // Ambil reference ke TextView dan CardView
+        val pickupInfoTextView: TextView = view!!.findViewById(R.id.pickupInfoTextView)
+        val cardViewPickupInfo: CardView = view!!.findViewById(R.id.cardViewPickupInfo)
+
+        // Ambil data pickupItem dari binding atau dari sumber data Anda
+        pickupItem?.let { item ->
+            // Isi TextView dengan data pickupItem
+            pickupInfoTextView.text = """
+            ID Pickup: ${item.idPickup}
+            Name: ${item.name}
+            ID Line: ${item.idLine}
+            Partner: ${item.partnerName} (ID: ${item.partnerId})
+            State: ${item.state}
+            Product: ${item.productName} (ID: ${item.productId})
+        """.trimIndent()
+
+            // Tampilkan CardView jika ada data, sembunyikan jika tidak ada
+            cardViewPickupInfo.visibility = View.VISIBLE
+        } ?: run {
+            // Jika pickupItem null, sembunyikan CardView
+            cardViewPickupInfo.visibility = View.GONE
+        }
+
+        return view
+    }
+
+
+    companion object {
+        private const val ARG_PICKUP_ITEM = "pickup_item"
+
+        fun newInstance(pickupItem: PickupItem?) = TakeInventoryFragment().apply {
+            arguments = Bundle().apply {
+                putParcelable(ARG_PICKUP_ITEM, pickupItem)
+            }
+        }
         const val REQUEST_PERMISSION_ID = 101
     }
 }
