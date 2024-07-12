@@ -5,6 +5,8 @@
     <string name="fast_read_write_text">Quick Reading</string>
     <string name="take_inventory_text">Stock Taking</string>
     <string name="label_operation_text">Tag Operation</string>
+    <string name="label_pick_up" translatable="false">Pick Up</string>
+    <string name="label_repair_check" translatable="false">Repair Check</string>
     <string name="label_location_text">Tag Locating</string>
     <string name="label_filter_text">Tag Filtering</string>
     <string name="setting_text">Settings</string>
@@ -225,7 +227,7 @@
     <string name="please_take_select_before_proceeding">Please select before operating</string>
     <string name="hint_excel_save_to_sd">Excel exported to the SD card</string>
     <string name="hint_copy_epc_clipboard">Copied to the clipboard</string>
-    
+
     <string name="hint_filter_offset_len">Please enter the correct offset position (0~255)</string>
 
     <string name="inventory_mode_balance">Balance</string>
@@ -242,4 +244,6 @@
     <string name="handle_trigger_mode_tap">Tap to trigger</string>
     <string name="setting_rf_power_text">RF power setting</string>
     <string name="please_input_rf_power">please enter the RF power</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>

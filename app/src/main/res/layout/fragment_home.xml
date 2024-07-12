@@ -101,12 +101,11 @@
             app:layout_goneMarginRight="@dimen/sunmi_30px"
             sunmi:outline="@{`12`}" />
 
-
         <TextView
             android:id="@+id/label_operation_tv"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_marginTop="@dimen/sunmi_20px"
+            android:layout_marginTop="8dp"
             android:layout_marginRight="@dimen/sunmi_20px"
             android:background="@color/labelOperationColor"
             android:drawableTop="@drawable/label_operation_icon"
@@ -117,11 +116,11 @@
             android:text="@string/label_operation_text"
             android:textColor="@color/white"
             android:textSize="@dimen/sunmi_32ps"
-            app:layout_constraintDimensionRatio="h,11:10"
-            app:layout_constraintHorizontal_weight="1"
-            app:layout_constraintLeft_toLeftOf="@id/fast_read_write_tv"
-            app:layout_constraintRight_toLeftOf="@id/label_location_tv"
-            app:layout_constraintTop_toBottomOf="@id/fast_read_write_tv"
+            sunmi:layout_constraintDimensionRatio="h,11:10"
+            sunmi:layout_constraintHorizontal_weight="1"
+            sunmi:layout_constraintLeft_toLeftOf="@id/fast_read_write_tv"
+            sunmi:layout_constraintRight_toLeftOf="@id/label_location_tv"
+            sunmi:layout_constraintTop_toBottomOf="@id/fast_read_write_tv"
             sunmi:outline="@{`12`}" />
 
         <TextView
@@ -146,10 +145,49 @@
 
 
         <TextView
+            android:id="@+id/label_stock_picking"
+            android:layout_width="386dp"
+            android:layout_height="53dp"
+            android:layout_marginTop="8dp"
+            android:background="@color/labelPickupColor"
+            android:gravity="center_horizontal"
+            android:onClick="@{()->vm.onPickupClick()}"
+            android:paddingTop="15dp"
+            android:text="@string/label_pick_up"
+            android:textColor="@color/white"
+            android:textSize="@dimen/sunmi_32ps"
+            app:layout_constraintEnd_toEndOf="@+id/label_location_tv"
+            app:layout_constraintHorizontal_weight="1"
+            app:layout_constraintLeft_toLeftOf="@id/label_operation_tv"
+            app:layout_constraintRight_toLeftOf="@id/label_location_tv"
+            app:layout_constraintStart_toStartOf="@+id/label_operation_tv"
+            app:layout_constraintTop_toBottomOf="@id/label_operation_tv"
+            sunmi:outline="@{`12`}" />
+
+        <TextView
+            android:id="@+id/label_repair_order"
+            android:layout_width="386dp"
+            android:layout_height="53dp"
+            android:layout_marginTop="8dp"
+            android:background="@color/labelPickupColor"
+            android:gravity="center_horizontal"
+            android:onClick="@{()->vm.onTakeInventoryClick()}"
+            android:paddingTop="15dp"
+            android:text="@string/label_repair_check"
+            android:textColor="@color/white"
+            android:textSize="@dimen/sunmi_32ps"
+            app:layout_constraintEnd_toEndOf="@+id/label_stock_picking"
+            app:layout_constraintHorizontal_weight="1"
+            app:layout_constraintLeft_toLeftOf="@id/label_stock_picking"
+            app:layout_constraintRight_toRightOf="@id/label_location_tv"
+            app:layout_constraintTop_toBottomOf="@id/label_stock_picking"
+            sunmi:outline="@{`12`}" />
+
+        <TextView
             android:id="@+id/label_filter_tv"
             android:layout_width="0dp"
             android:layout_height="@dimen/sunmi_100px"
-            android:layout_marginTop="@dimen/sunmi_30px"
+            android:layout_marginTop="16dp"
             android:drawableLeft="@drawable/label_filter_icon"
             android:drawableRight="@drawable/right_arrow_icon"
             android:drawablePadding="@dimen/sunmi_20px"
@@ -159,9 +197,10 @@
             android:textColor="@color/majorTextColor"
             android:textSize="@dimen/sunmi_32ps"
             android:visibility="@{vm.isInner()? View.GONE:View.VISIBLE}"
-            app:layout_constraintLeft_toLeftOf="@id/label_operation_tv"
-            app:layout_constraintRight_toRightOf="@id/label_location_tv"
-            app:layout_constraintTop_toBottomOf="@id/label_operation_tv" />
+            app:layout_constraintHorizontal_bias="1.0"
+            app:layout_constraintLeft_toLeftOf="@id/label_repair_order"
+            app:layout_constraintRight_toRightOf="@id/label_repair_order"
+            app:layout_constraintTop_toBottomOf="@id/label_repair_order" />
 
         <View
             android:id="@+id/label_filter_line"

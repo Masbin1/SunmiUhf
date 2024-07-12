@@ -13,6 +13,7 @@ import androidx.lifecycle.Observer
 import com.sunmi.rfid.RFIDManager
 import com.sunmi.rfid.constant.ParamCts
 import com.sunmi.uhf.App
+import com.sunmi.uhf.fragment.pickup.PickupFragment
 import com.sunmi.uhf.R
 import com.sunmi.uhf.base.BaseFragment
 import com.sunmi.uhf.constants.Config
@@ -137,6 +138,26 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                     clearStack = false
                 )
             }
+
+            EventConstant.EVENT_PICKUP -> {
+                //this is for pickup
+                switchFragment(
+                    PickupFragment.newInstance(null),
+                    addToBackStack = true,
+                    clearStack = false
+                )
+            }
+
+//            EventConstant.EVENT_REPAIR_CHECK ->{
+//                //This is for repair order check
+//                switchFragment(
+//                    RepairCheck.newInstance(null),
+//                    addToBackStack = true,
+//                    clearStack = false
+//                )
+//            }
+
+
             EventConstant.EVENT_LABEL_OPERATION -> {
                 //标签操作存页
                 switchFragment(

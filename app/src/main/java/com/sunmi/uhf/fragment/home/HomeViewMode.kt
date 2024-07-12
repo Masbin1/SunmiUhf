@@ -45,6 +45,14 @@ class HomeViewMode : BaseViewModel() {
         EventConstant.EVENT_LABEL_LOCATION.publish()
     }
 
+    fun onPickupClick() {
+        EventConstant.EVENT_PICKUP.publish()
+    }
+
+    fun onRepairCheck() {
+        EventConstant.EVENT_REPAIR_CHECK.publish()
+    }
+
     /**
      * 标签过滤的点击事件
      */

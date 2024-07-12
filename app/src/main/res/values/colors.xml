@@ -16,6 +16,8 @@
     <color name="takeInventoryColor">#F4A507</color>
     <color name="labelOperationColor">#5B57EE</color>
     <color name="labelLocationColor">#089FA1</color>
+    <color name="labelPickupColor">#2196F3</color>
+
 
 
     <color name="dividerColor">#e4e4e4</color>

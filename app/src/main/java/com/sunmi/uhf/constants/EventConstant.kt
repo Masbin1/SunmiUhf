@@ -29,6 +29,11 @@ object EventConstant {
     /** 设置 */
     const val EVENT_SETTING = 1005
 
+//    ini untuk pickup
+    const val EVENT_PICKUP = 1101
+
+//    ini untuk repair
+    const val EVENT_REPAIR_CHECK = 1102
 
     /** 点击盘存模式 */
     const val EVENT_TAKE_MODEL = 1006
