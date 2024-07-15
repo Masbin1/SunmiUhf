@@ -1,20 +1,18 @@
-package com.sunmi.uhf.fragment.pickup
-
-import PickupAdapter
-import PickupItem
+package com.sunmi.uhf.fragment.batch
+import BatchAdapter
+import BatchItem
+import android.annotation.SuppressLint
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.android.volley.Request
 import com.android.volley.RequestQueue
-import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
 import com.sunmi.uhf.fragment.takeinventory.TakeInventoryFragment
 import com.android.volley.toolbox.Volley
@@ -22,37 +20,48 @@ import com.sunmi.uhf.R
 import org.json.JSONArray
 import org.json.JSONObject
 
-class PickupFragment : Fragment() {
+class BatchFragment : Fragment() {
 
     private lateinit var recyclerView: RecyclerView
-    private lateinit var pickupAdapter: PickupAdapter
-    private val pickupList = mutableListOf<PickupItem>()
+    private lateinit var batchAdapter: BatchAdapter
+    private val batchList = mutableListOf<BatchItem>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val view = inflater.inflate(R.layout.fragment_pickup, container, false)
+        val view = inflater.inflate(R.layout.fragment_batch, container, false)
 
-        recyclerView = view.findViewById(R.id.recyclerViewPickup)
+        recyclerView = view.findViewById(R.id.recyclerViewbatch)
         recyclerView.layoutManager = LinearLayoutManager(context)
-        pickupAdapter = PickupAdapter(pickupList) { pickupItem ->
-            openTakeInventoryFragment(pickupItem)
+        batchAdapter = BatchAdapter(batchList) { batchItem ->
+            openTakeInventoryFragment(batchItem)
         }
-        recyclerView.adapter = pickupAdapter
+        recyclerView.adapter = batchAdapter
 
-        val textView: TextView = view.findViewById(R.id.get_mylist_pickup)
-        textView.setOnClickListener {
+        val getMyListTextView: TextView = view.findViewById(R.id.get_my_list_batch)
+        getMyListTextView.setOnClickListener {
             fetchDataFromApi()
+        }
+
+        val scanBatchTextView: TextView = view.findViewById(R.id.scan_batch)
+        scanBatchTextView.setOnClickListener {
+            if (batchList.isNotEmpty()) {
+                // Pass the first item in the list to the fragment, or modify this as needed
+                openTakeInventoryFragment(batchList[0])
+            } else {
+                Toast.makeText(activity, "No batch items available", Toast.LENGTH_SHORT).show()
+            }
         }
 
         return view
     }
 
-    private fun openTakeInventoryFragment(pickupItem: PickupItem) {
-        val takeInventoryFragment = TakeInventoryFragment.newInstance(pickupItem)
+
+    private fun openTakeInventoryFragment(batchItem: BatchItem) {
+        val takeInventoryFragment = TakeInventoryFragment.newInstance(batchItem)
         parentFragmentManager.beginTransaction()
-            .replace(R.id.frameLayoutPickup, takeInventoryFragment)
+            .replace(R.id.frameLayoutbatch, takeInventoryFragment)
             .addToBackStack(null)
             .commit()
     }
@@ -60,44 +69,40 @@ class PickupFragment : Fragment() {
 
     private fun fetchDataFromApi() {
         val queue: RequestQueue = Volley.newRequestQueue(activity)
-        val url = "https://loyal-martin-present.ngrok-free.app/rfid/get/order/pickup"
+        val url = "https://loyal-martin-present.ngrok-free.app/get/batch/picking"
 
         val stringRequest = StringRequest(
             Request.Method.GET, url,
-            Response.Listener<String> { response ->
+            { response ->
                 addDataToList(response)
             },
-            Response.ErrorListener {
+            {
                 Toast.makeText(activity, "That didn't work!", Toast.LENGTH_LONG).show()
             })
 
         queue.add(stringRequest)
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private fun addDataToList(response: String) {
         try {
             val jsonObject = JSONObject(response)
             val status = jsonObject.getString("status")
 
             if (status == "success") {
-                val pickupOrders: JSONArray = jsonObject.getJSONArray("pickup_orders")
-                pickupList.clear()
+                val batchOrders: JSONArray = jsonObject.getJSONArray("batch_datas")
+                batchList.clear()
 
-                for (i in 0 until pickupOrders.length()) {
-                    val order = pickupOrders.getJSONObject(i)
-                    val pickupItem = PickupItem(
-                        idPickup = order.getInt("id_pickup"),
+                for (i in 0 until batchOrders.length()) {
+                    val order = batchOrders.getJSONObject(i)
+                    val batchItem = BatchItem(
+                        idBatch = order.getInt("id_batch"),
                         name = order.getString("name"),
-                        idLine = order.getInt("id_line"),
-                        partnerId = order.getInt("partner_id"),
-                        partnerName = order.getString("partner_name"),
-                        state = order.getString("state"),
-                        productId = order.getInt("product_id"),
-                        productName = order.getString("product_name")
+                        responsible = order.getString("responsible"),
                     )
-                    pickupList.add(pickupItem)
+                    batchList.add(batchItem)
                 }
-                pickupAdapter.notifyDataSetChanged()
+                batchAdapter.notifyDataSetChanged()
             } else {
                 val errorMessage = jsonObject.getString("message")
                 Toast.makeText(activity, "Error: $errorMessage", Toast.LENGTH_LONG).show()
@@ -109,6 +114,6 @@ class PickupFragment : Fragment() {
     }
 
     companion object {
-        fun newInstance(nothing: Nothing?) = PickupFragment()
+        fun newInstance() = BatchFragment()
     }
 }

@@ -5,10 +5,10 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.sunmi.uhf.R
 
-class PickupAdapter(private val pickupList: List<PickupItem>, private val onItemClick: (PickupItem) -> Unit) :
-    RecyclerView.Adapter<PickupAdapter.PickupViewHolder>() {
+class StockPickingAdapter(private val stockPickingList: List<StockPickingItem>, private val onItemClick: (StockPickingItem) -> Unit) :
+    RecyclerView.Adapter<StockPickingAdapter.StockPickingPickupViewHolder>() {
 
-    class PickupViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    class StockPickingPickupViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val textViewIdPickup: TextView = itemView.findViewById(R.id.textViewIdPickup)
         val textViewName: TextView = itemView.findViewById(R.id.textViewName)
         val textViewIdLine: TextView = itemView.findViewById(R.id.textViewIdLine)
@@ -17,17 +17,17 @@ class PickupAdapter(private val pickupList: List<PickupItem>, private val onItem
         val textViewProduct: TextView = itemView.findViewById(R.id.textViewProduct)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PickupViewHolder {
-        val itemView = LayoutInflater.from(parent.context).inflate(R.layout.item_pickup, parent, false)
-        return PickupViewHolder(itemView)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): StockPickingPickupViewHolder {
+        val itemView = LayoutInflater.from(parent.context).inflate(R.layout.item_stock_picking, parent, false)
+        return StockPickingPickupViewHolder(itemView)
     }
 
-    override fun onBindViewHolder(holder: PickupViewHolder, position: Int) {
-        val currentItem = pickupList[position]
+    override fun onBindViewHolder(holder: StockPickingPickupViewHolder, position: Int) {
+        val currentItem = stockPickingList[position]
         holder.textViewIdPickup.text = "ID Pickup: ${currentItem.idPickup}"
         holder.textViewName.text = "Name: ${currentItem.name}"
         holder.textViewIdLine.text = "ID Line: ${currentItem.idLine}"
-        holder.textViewPartner.text = "Partner: ${currentItem.partnerName} (ID: ${currentItem.partnerId})"
+        holder.textViewPartner.text = "Partner: ${currentItem.partnerName}"
         holder.textViewState.text = "State: ${currentItem.state}"
         holder.textViewProduct.text = "Product: ${currentItem.productName} (ID: ${currentItem.productId})"
 
@@ -36,5 +36,5 @@ class PickupAdapter(private val pickupList: List<PickupItem>, private val onItem
         }
     }
 
-    override fun getItemCount() = pickupList.size
+    override fun getItemCount() = stockPickingList.size
 }

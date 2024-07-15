@@ -13,7 +13,7 @@ import androidx.lifecycle.Observer
 import com.sunmi.rfid.RFIDManager
 import com.sunmi.rfid.constant.ParamCts
 import com.sunmi.uhf.App
-import com.sunmi.uhf.fragment.pickup.PickupFragment
+import com.sunmi.uhf.fragment.batch.BatchFragment
 import com.sunmi.uhf.R
 import com.sunmi.uhf.base.BaseFragment
 import com.sunmi.uhf.constants.Config
@@ -23,6 +23,7 @@ import com.sunmi.uhf.event.SimpleViewEvent
 import com.sunmi.uhf.fragment.filter.LabelFilterFragment
 import com.sunmi.uhf.fragment.location.LabelLocationFragment
 import com.sunmi.uhf.fragment.operation.LabelOperationFragment
+import com.sunmi.uhf.fragment.pickuporder.StockPicking
 import com.sunmi.uhf.fragment.readwrite.ReadWriteFragment
 import com.sunmi.uhf.fragment.setting.SettingFragment
 import com.sunmi.uhf.fragment.takeinventory.TakeInventoryFragment
@@ -139,23 +140,23 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                 )
             }
 
-            EventConstant.EVENT_PICKUP -> {
+            EventConstant.EVENT_BATCH -> {
                 //this is for pickup
                 switchFragment(
-                    PickupFragment.newInstance(null),
+                    BatchFragment.newInstance(),
                     addToBackStack = true,
                     clearStack = false
                 )
             }
 
-//            EventConstant.EVENT_REPAIR_CHECK ->{
-//                //This is for repair order check
-//                switchFragment(
-//                    RepairCheck.newInstance(null),
-//                    addToBackStack = true,
-//                    clearStack = false
-//                )
-//            }
+            EventConstant.EVENT_STOCK_PICKING ->{
+                //This is for repair order check
+                switchFragment(
+                    StockPicking.newInstance(null),
+                    addToBackStack = true,
+                    clearStack = false
+                )
+            }
 
 
             EventConstant.EVENT_LABEL_OPERATION -> {

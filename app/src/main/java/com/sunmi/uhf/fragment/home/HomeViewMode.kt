@@ -45,12 +45,12 @@ class HomeViewMode : BaseViewModel() {
         EventConstant.EVENT_LABEL_LOCATION.publish()
     }
 
-    fun onPickupClick() {
-        EventConstant.EVENT_PICKUP.publish()
+    fun onBatch() {
+        EventConstant.EVENT_BATCH.publish()
     }
 
-    fun onRepairCheck() {
-        EventConstant.EVENT_REPAIR_CHECK.publish()
+    fun onStockPicking() {
+        EventConstant.EVENT_STOCK_PICKING.publish()
     }
 
     /**

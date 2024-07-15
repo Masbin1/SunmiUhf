@@ -1,6 +1,6 @@
 package com.sunmi.uhf.fragment.takeinventory
 
-import PickupItem
+import BatchItem
 import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -52,7 +52,7 @@ import kotlin.math.min
  * @UpdateDate: 20-9-9 下午1:38
  */
 class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
-    private var pickupItem: PickupItem? = null
+    private var batchItem: BatchItem? = null
     private var dialog: SureBackDialog? = null
     lateinit var vm: TakeInventoryModel
     private var isLoop = false
@@ -800,7 +800,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
-            pickupItem = it.getParcelable(ARG_PICKUP_ITEM)
+            batchItem = it.getParcelable(ARG_PICKUP_ITEM)
         }
     }
 
@@ -814,22 +814,20 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         val pickupInfoTextView: TextView = view!!.findViewById(R.id.pickupInfoTextView)
         val cardViewPickupInfo: CardView = view!!.findViewById(R.id.cardViewPickupInfo)
 
-        // Ambil data pickupItem dari binding atau dari sumber data Anda
-        pickupItem?.let { item ->
-            // Isi TextView dengan data pickupItem
+        // Ambil data batchItem dari binding atau dari sumber data Anda
+        batchItem?.let { item ->
+            // Isi TextView dengan data batchItem
             pickupInfoTextView.text = """
-            ID Pickup: ${item.idPickup}
+            ID Pickup: ${item.idBatch}
             Name: ${item.name}
-            ID Line: ${item.idLine}
-            Partner: ${item.partnerName} (ID: ${item.partnerId})
-            State: ${item.state}
-            Product: ${item.productName} (ID: ${item.productId})
+            Responsible: ${item.responsible}
+            
         """.trimIndent()
 
             // Tampilkan CardView jika ada data, sembunyikan jika tidak ada
             cardViewPickupInfo.visibility = View.VISIBLE
         } ?: run {
-            // Jika pickupItem null, sembunyikan CardView
+            // Jika batchItem null, sembunyikan CardView
             cardViewPickupInfo.visibility = View.GONE
         }
 
@@ -840,9 +838,9 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     companion object {
         private const val ARG_PICKUP_ITEM = "pickup_item"
 
-        fun newInstance(pickupItem: PickupItem?) = TakeInventoryFragment().apply {
+        fun newInstance(batchItem: BatchItem?) = TakeInventoryFragment().apply {
             arguments = Bundle().apply {
-                putParcelable(ARG_PICKUP_ITEM, pickupItem)
+                putParcelable(ARG_PICKUP_ITEM, batchItem)
             }
         }
         const val REQUEST_PERMISSION_ID = 101
