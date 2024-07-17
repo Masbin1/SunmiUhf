@@ -1,10 +1,13 @@
 package com.sunmi.uhf.fragment.pickuporder
 import StockPickingAdapter
 import StockPickingItem
+import android.app.AlertDialog
 import android.os.Bundle
+import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -41,7 +44,7 @@ class StockPicking : Fragment() {
 
         val getMyListTextView: TextView = view.findViewById(R.id.get_my_list_stockPicking)
         getMyListTextView.setOnClickListener {
-            fetchDataPickingFromApi()
+            showPinInputDialog()
         }
 
         val scanstockPickingTextView: TextView = view.findViewById(R.id.scan_stockPicking)
@@ -66,20 +69,52 @@ class StockPicking : Fragment() {
             .commit()
     }
 
+    private fun showPinInputDialog() {
+        val builder = AlertDialog.Builder(activity)
+        builder.setTitle("Enter PIN")
 
-    private fun fetchDataPickingFromApi() {
+        val input = EditText(activity)
+        input.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
+        builder.setView(input)
+
+        builder.setPositiveButton("OK") { dialog, which ->
+            val pin = input.text.toString()
+            validatePin(pin)
+        }
+        builder.setNegativeButton("Cancel") { dialog, which ->
+            dialog.cancel()
+        }
+
+        builder.show()
+    }
+
+    private fun validatePin(pin: String) {
         val queue: RequestQueue = Volley.newRequestQueue(activity)
         val url = "https://loyal-martin-present.ngrok-free.app/get/stock/picking"
 
-        val stringRequest = StringRequest(
-            Request.Method.GET, url,
+        val stringRequest = object : StringRequest(
+            Request.Method.POST, url,
             Response.Listener<String> { response ->
-                addDataToList(response)
+                val jsonResponse = JSONObject(response)
+                val status = jsonResponse.getString("status")
+                if (status == "success") {
+                    addDataToList(response)
+                } else {
+                    val message = jsonResponse.getString("message")
+                    Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
+                }
             },
             Response.ErrorListener { error ->
                 error.printStackTrace()
                 Toast.makeText(activity, "Error: ${error.message}", Toast.LENGTH_LONG).show()
-            })
+            }) {
+            override fun getParams(): Map<String, String> {
+                val params = HashMap<String, String>()
+                params["pin"] = pin
+                return params
+            }
+        }
+
         queue.add(stringRequest)
     }
 
@@ -101,7 +136,8 @@ class StockPicking : Fragment() {
                         partnerName = order.getString("partner_name"),
                         state = order.getString("state"),
                         productId = order.getInt("product_id"),
-                        productName = order.getString("product_name")
+                        productName = order.getString("product_name"),
+                        pin = order.getString("pin")
                     )
                     stockPickingList.add(stockPickingItem)
                 }
@@ -115,6 +151,7 @@ class StockPicking : Fragment() {
             Toast.makeText(activity, "Error parsing JSON: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
+
 
 
     companion object {

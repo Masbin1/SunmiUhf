@@ -9,5 +9,6 @@ data class StockPickingItem(
     val partnerName: String,
     val state: String,
     val productId: Int,
-    val productName: String
+    val productName: String,
+    val pin: String
 ) : Parcelable

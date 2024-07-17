@@ -246,4 +246,6 @@
     <string name="please_input_rf_power">please enter the RF power</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="list_batch">List batch</string>
+    <string name="get_list_batch_picking">Get List Batch Picking</string>
 </resources>
