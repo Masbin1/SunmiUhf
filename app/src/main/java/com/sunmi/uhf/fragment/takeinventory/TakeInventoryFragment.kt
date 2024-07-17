@@ -1,6 +1,7 @@
 package com.sunmi.uhf.fragment.takeinventory
 
 import BatchItem
+import StockPickingItem
 import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -70,6 +71,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     private var power = 30
     private var rate = -1
     private var autoPower = Config.DEF_TAKE_AUTO_POWER
+    private lateinit var stockPickingList: List<StockPickingItem>
     private val br = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
@@ -802,6 +804,9 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         arguments?.let {
             batchItem = it.getParcelable(ARG_PICKUP_ITEM)
         }
+        arguments?.let {
+            stockPickingList = it.getParcelableArrayList(ARG_STOCK_PICKING_LIST) ?: emptyList()
+        }
     }
 
     override fun onCreateView(
@@ -831,6 +836,8 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
             cardViewPickupInfo.visibility = View.GONE
         }
 
+
+
         return view
     }
 
@@ -843,6 +850,17 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                 putParcelable(ARG_PICKUP_ITEM, batchItem)
             }
         }
+        private const val ARG_STOCK_PICKING_LIST = "stock_picking_list"
+
+        fun newInstance(stockPickingList: List<StockPickingItem>): TakeInventoryFragment {
+            val fragment = TakeInventoryFragment()
+            val args = Bundle()
+            args.putParcelableArrayList(ARG_STOCK_PICKING_LIST, ArrayList(stockPickingList))
+            fragment.arguments = args
+            return fragment
+        }
+
+
         const val REQUEST_PERMISSION_ID = 101
     }
 }

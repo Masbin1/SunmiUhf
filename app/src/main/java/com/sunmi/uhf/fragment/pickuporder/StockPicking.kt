@@ -38,7 +38,8 @@ class StockPicking : Fragment() {
         recyclerView = view.findViewById(R.id.recyclerViewstockPicking)
         recyclerView.layoutManager = LinearLayoutManager(context)
         stockPickingAdapter = StockPickingAdapter(stockPickingList) { stockPickingItem ->
-            openTakeInventoryFragment(stockPickingItem)
+            // Handle individual item click if needed
+            // For example, you could show details of the clicked item
         }
         recyclerView.adapter = stockPickingAdapter
 
@@ -50,8 +51,7 @@ class StockPicking : Fragment() {
         val scanstockPickingTextView: TextView = view.findViewById(R.id.scan_stockPicking)
         scanstockPickingTextView.setOnClickListener {
             if (stockPickingList.isNotEmpty()) {
-                // Pass the first item in the list to the fragment, or modify this as needed
-                openTakeInventoryFragment(stockPickingList[0])
+                openTakeInventoryFragment(stockPickingList)
             } else {
                 Toast.makeText(activity, "No stockPicking items available", Toast.LENGTH_SHORT).show()
             }
@@ -61,8 +61,8 @@ class StockPicking : Fragment() {
     }
 
 
-    private fun openTakeInventoryFragment(stockPickingItem: StockPickingItem) {
-        val takeInventoryFragment = TakeInventoryFragment.newInstance(null)
+    private fun openTakeInventoryFragment(stockPickingList: List<StockPickingItem>) {
+        val takeInventoryFragment = TakeInventoryFragment.newInstance(stockPickingList)
         parentFragmentManager.beginTransaction()
             .replace(R.id.frameLayoutstockPicking, takeInventoryFragment)
             .addToBackStack(null)
