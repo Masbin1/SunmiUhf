@@ -94,6 +94,21 @@
                 android:textColor="#000000"/>
         </androidx.cardview.widget.CardView>
 
+        <TextView
+            android:id="@+id/can_stock_picking_match"
+            android:layout_width="420dp"
+            android:layout_height="57dp"
+            android:background="#FF5722"
+            android:gravity="center_horizontal"
+            android:paddingTop="15dp"
+            android:text="Scanning"
+            android:textColor="#FFFFFF"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.555"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.934" />
 
         <HorizontalScrollView
             android:id="@+id/horizontalScrollView"

@@ -836,7 +836,14 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
             cardViewPickupInfo.visibility = View.GONE
         }
 
+        val canStockPickingMatchTextView: TextView = view.findViewById(R.id.can_stock_picking_match)
 
+        // Set the visibility based on whether stockPickingList is empty or not
+        if (stockPickingList.isNotEmpty()) {
+            canStockPickingMatchTextView.visibility = View.VISIBLE
+        } else {
+            canStockPickingMatchTextView.visibility = View.GONE
+        }
 
         return view
     }
