@@ -14,12 +14,14 @@ import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
 import android.view.LayoutInflater
+import android.widget.Button
 import android.widget.PopupWindow
 import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.sunmi.rfid.RFIDManager
@@ -45,6 +47,15 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.math.min
 
+import okhttp3.*
+import java.io.IOException
+import okhttp3.OkHttpClient
+import okhttp3.FormBody
+import okhttp3.Request
+import okhttp3.Callback
+import okhttp3.Call
+import okhttp3.Response
+
 /**
  * @ClassName: TakeInventoryFragment
  * @Description: 盘存 页面
@@ -53,6 +64,7 @@ import kotlin.math.min
  * @UpdateDate: 20-9-9 下午1:38
  */
 class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
+    private lateinit var model: TakeInventoryModel
     private var batchItem: BatchItem? = null
     private var dialog: SureBackDialog? = null
     lateinit var vm: TakeInventoryModel
@@ -606,6 +618,110 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         }
     }
 
+    object TemporaryStorage {
+        private val epcList = mutableListOf<String>()
+
+        fun addEpc(epc: String) {
+            if (!epcList.contains(epc)) {
+                epcList.add(epc)
+            }
+        }
+
+        fun getAllEpcs(): List<String> {
+            return epcList.toList()
+        }
+
+        fun clearEpcs() {
+            epcList.clear()
+        }
+
+        fun isEmpty(): Boolean {
+            return epcList.isEmpty()
+        }
+    }
+
+    private fun updateSendDataRepairVisibility(sendDataRepair: TextView) {
+        if (TemporaryStorage.isEmpty()) {
+            sendDataRepair.visibility = View.INVISIBLE
+        } else {
+            sendDataRepair.visibility = View.VISIBLE
+        }
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        model.sendDataEvent.observe(viewLifecycleOwner) {
+            sendDataToOdoo()
+        }
+    }
+
+    private fun sendDataToOdoo() {
+        val client = OkHttpClient()
+
+        val formBody = FormBody.Builder()
+            .add("rfid_tags", TemporaryStorage.getAllEpcs().joinToString(","))
+            .add("api_id", "repair_order_drbags")
+            .build()
+
+        val request = Request.Builder()
+            .url("https://loyal-martin-present.ngrok-free.app/rfid/scan/repairing")
+            .post(formBody)
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                // Handle failure
+                e.printStackTrace()
+                // You might want to update UI or log the error here
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                response.use {
+                    if (!response.isSuccessful) {
+                        // Handle unsuccessful response
+                        throw IOException("Unexpected code $response")
+                    }
+
+                    // Handle successful response
+                    val responseBody = response.body?.string()
+                    // Process the response body here
+                    // You might want to parse the response or update UI based on it
+                }
+            }
+        })
+    }
+
+//    private fun sendDataToOdoo() {
+//        val queue: RequestQueue = Volley.newRequestQueue(context)
+//        val url = "https://loyal-martin-present.ngrok-free.app/rfid/scan/repairing"
+//
+//        val stringRequest = object : StringRequest(
+//            Request.Method.POST, url,
+//            Response.Listener<String> {
+//                // Successfully sent, no need to handle response
+//            },
+//            Response.ErrorListener { error ->
+//                error.printStackTrace()
+//                Toast.makeText(context, "Error: ${error.message}", Toast.LENGTH_LONG).show()
+//            }) {
+//            override fun getParams(): Map<String, String> {
+//                val params = HashMap<String, String>()
+//                params["api_id"] = "repair_order_drbags"
+//
+//                // Assuming TemporaryStorage.getAllEpcs() returns a List<String>
+//                val rfidTags = TemporaryStorage.getAllEpcs()
+//                val rfidTagsString = rfidTags.joinToString(separator = ",") { URLEncoder.encode(it, "UTF-8") }
+//                params["rfid_tags"] = rfidTagsString
+//
+//                return params
+//            }
+//            override fun getBodyContentType(): String {
+//                return "application/x-www-form-urlencoded; charset=utf-8"
+//            }
+//        }
+//        queue.add(stringRequest)
+//    }
+
     override fun onCallTag(cmd: Byte, state: Byte, tag: DataParameter?) {
         if (tag == null) return
         playTips()
@@ -616,6 +732,10 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                 allCount++
                 // ANT_ID、TAG_PC、TAG_EPC、TAG_RSSI、TAG_READ_COUNT、TAG_FREQ、TAG_TIME
                 val epc = tag.getString(ParamCts.TAG_EPC) ?: ""
+                TemporaryStorage.addEpc(epc)
+                view?.findViewById<TextView>(R.id.send_data_repair)?.let {
+                    updateSendDataRepairVisibility(it)
+                }
                 val pc = tag.getString(ParamCts.TAG_PC) ?: ""
                 val rssi = "${(Integer.parseInt(tag.getString(ParamCts.TAG_RSSI, "129")) - 129)}"
                 val freq = tag.getString(ParamCts.TAG_FREQ) ?: ""
@@ -633,19 +753,6 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                 }
                 notifyTagDataChange()
             }
-            /*CMD.ISO18000_6B_INVENTORY -> {
-                allCount++
-                val uid = tag.getString(ParamCts.TAG_UID) ?: ""
-                LogUtils.i("darren", "found tag:$uid")
-                val index: Int = tidList.indexOf(uid)
-                if (index != -1) {
-                    tagList[index] = tag
-                } else {
-                    tidList.add(0, uid)
-                    tagList.add(0, tag)
-                }
-                notifyTagDataChange()
-            }*/
             else -> {
                 LogUtils.d("darren", "other found tag.")
             }
@@ -801,6 +908,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        model = ViewModelProvider(this).get(TakeInventoryModel::class.java)
         arguments?.let {
             batchItem = it.getParcelable(ARG_PICKUP_ITEM)
         }
@@ -844,6 +952,11 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         } else {
             canStockPickingMatchTextView.visibility = View.GONE
         }
+
+        val sendDataRepair: Button = view.findViewById(R.id.send_data_repair)
+
+        // Atur visibilitas sendDataRepair berdasarkan isi TemporaryStorage
+        updateSendDataRepairVisibility(sendDataRepair)
 
         return view
     }
