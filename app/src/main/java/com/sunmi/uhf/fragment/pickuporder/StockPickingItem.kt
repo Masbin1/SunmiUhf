@@ -11,6 +11,7 @@ data class StockPickingItem(
     val productId: Int,
     val productName: String,
     val pin:String,
+    val rfid:String,
 ) : Parcelable {
     constructor(parcel: Parcel) : this(
         parcel.readInt(),
@@ -20,7 +21,8 @@ data class StockPickingItem(
         parcel.readString() ?: "",
         parcel.readInt(),
         parcel.readString() ?: "",
-        parcel.readString() ?: ""
+        parcel.readString() ?: "",
+        parcel.readString()?:"",
     )
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
@@ -32,6 +34,7 @@ data class StockPickingItem(
         parcel.writeInt(productId)
         parcel.writeString(productName)
         parcel.writeString(pin)
+        parcel.writeString(rfid)
     }
 
     override fun describeContents(): Int {

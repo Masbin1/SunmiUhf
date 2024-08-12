@@ -22,6 +22,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.observe
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.sunmi.rfid.RFIDManager
@@ -55,6 +56,11 @@ import okhttp3.Request
 import okhttp3.Callback
 import okhttp3.Call
 import okhttp3.Response
+import org.json.JSONArray
+import org.json.JSONObject
+import kotlinx.coroutines.*
+import okhttp3.MediaType.Companion.toMediaType
+
 
 /**
  * @ClassName: TakeInventoryFragment
@@ -641,11 +647,85 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     }
 
     private fun updateSendDataRepairVisibility(sendDataRepair: TextView) {
-        if (TemporaryStorage.isEmpty()) {
+        if (TemporaryStorage.isEmpty() or stockPickingList.isNotEmpty() ) {
             sendDataRepair.visibility = View.INVISIBLE
         } else {
             sendDataRepair.visibility = View.VISIBLE
         }
+    }
+
+    private val client = OkHttpClient()
+    private val url = "https://loyal-martin-present.ngrok-free.app/arrive/product/picking"
+
+    data class RfidStatus(val idLine: Int, val rfid: String, val status: String, val quantity_done: Float)
+
+    fun sendDataPickingToOdoo() {
+        val listOfRfidTemporary = TemporaryStorage.getAllEpcs()
+        val listStockPicking = stockPickingList
+
+        val matchedRfidList = listStockPicking.map { stockPickingItem ->
+            if (listOfRfidTemporary.contains(stockPickingItem.rfid)) {
+                RfidStatus(stockPickingItem.idLine, stockPickingItem.rfid, "match", 1.0F)
+            } else {
+                RfidStatus(stockPickingItem.idLine, stockPickingItem.rfid, "not_match", 0.0F)
+            }
+        }
+
+        sendToServer(matchedRfidList)
+    }
+
+    private fun sendToServer(matchedRfidList: List<RfidStatus>) {
+        val formBuilder = FormBody.Builder()
+
+        matchedRfidList.forEachIndexed { index, rfidStatus ->
+            formBuilder.add("idLine[$index]", rfidStatus.idLine.toString())
+            formBuilder.add("rfid[$index]", rfidStatus.rfid)
+            formBuilder.add("status[$index]", rfidStatus.status)
+            formBuilder.add("quantity_done[$index]", rfidStatus.quantity_done.toString())
+        }
+
+        val requestBody = formBuilder.build()
+
+        val request = Request.Builder()
+            .url(url)
+            .post(requestBody)
+            .build()
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = client.newCall(request).execute()
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful) {
+                        val responseBody = response.body?.string()
+                        println("Server response: $responseBody") // Log respons server
+                        handleSuccessResponse(responseBody)
+                    } else {
+                        println("Error response: ${response.code} - ${response.message}") // Log error
+                        handleErrorResponse(response.code)
+                    }
+                }
+            } catch (e: IOException) {
+                withContext(Dispatchers.Main) {
+                    println("Network error: ${e.message}") // Log network error
+                    handleFailure(e)
+                }
+            }
+        }
+    }
+
+    private fun handleSuccessResponse(responseBody: String?) {
+        println("Data berhasil dikirim: $responseBody")
+        // Tambahkan logika tambahan di sini jika diperlukan
+    }
+
+    private fun handleErrorResponse(code: Int) {
+        println("Gagal mengirim data: $code")
+        // Tambahkan logika penanganan error di sini
+    }
+
+    private fun handleFailure(e: Exception) {
+        println("Request Failed: $e")
+        // Tambahkan logika penanganan kegagalan di sini
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -653,7 +733,11 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         model.sendDataEvent.observe(viewLifecycleOwner) {
             sendDataToOdoo()
         }
+        model.sendDataEventPicking.observe(viewLifecycleOwner){
+            sendDataPickingToOdoo()
+        }
     }
+
 
     private fun sendDataToOdoo() {
         val client = OkHttpClient()
@@ -691,36 +775,6 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         })
     }
 
-//    private fun sendDataToOdoo() {
-//        val queue: RequestQueue = Volley.newRequestQueue(context)
-//        val url = "https://loyal-martin-present.ngrok-free.app/rfid/scan/repairing"
-//
-//        val stringRequest = object : StringRequest(
-//            Request.Method.POST, url,
-//            Response.Listener<String> {
-//                // Successfully sent, no need to handle response
-//            },
-//            Response.ErrorListener { error ->
-//                error.printStackTrace()
-//                Toast.makeText(context, "Error: ${error.message}", Toast.LENGTH_LONG).show()
-//            }) {
-//            override fun getParams(): Map<String, String> {
-//                val params = HashMap<String, String>()
-//                params["api_id"] = "repair_order_drbags"
-//
-//                // Assuming TemporaryStorage.getAllEpcs() returns a List<String>
-//                val rfidTags = TemporaryStorage.getAllEpcs()
-//                val rfidTagsString = rfidTags.joinToString(separator = ",") { URLEncoder.encode(it, "UTF-8") }
-//                params["rfid_tags"] = rfidTagsString
-//
-//                return params
-//            }
-//            override fun getBodyContentType(): String {
-//                return "application/x-www-form-urlencoded; charset=utf-8"
-//            }
-//        }
-//        queue.add(stringRequest)
-//    }
 
     override fun onCallTag(cmd: Byte, state: Byte, tag: DataParameter?) {
         if (tag == null) return
@@ -950,7 +1004,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         if (stockPickingList.isNotEmpty()) {
             canStockPickingMatchTextView.visibility = View.VISIBLE
         } else {
-            canStockPickingMatchTextView.visibility = View.GONE
+            canStockPickingMatchTextView.visibility = View.INVISIBLE
         }
 
         val sendDataRepair: Button = view.findViewById(R.id.send_data_repair)

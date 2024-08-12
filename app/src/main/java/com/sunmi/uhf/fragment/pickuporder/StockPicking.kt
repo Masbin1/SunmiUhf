@@ -137,7 +137,8 @@ class StockPicking : Fragment() {
                         state = order.getString("state"),
                         productId = order.getInt("product_id"),
                         productName = order.getString("product_name"),
-                        pin = order.getString("pin")
+                        pin = order.getString("pin"),
+                        rfid = order.getString("rfid"),
                     )
                     stockPickingList.add(stockPickingItem)
                 }

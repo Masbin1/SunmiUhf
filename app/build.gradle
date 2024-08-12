@@ -128,4 +128,6 @@ dependencies {
     implementation 'net.sourceforge.jexcelapi:jxl:2.6.12'
     //for https get from internet
     implementation 'com.android.volley:volley:1.2.1'
+
+    implementation "com.squareup.okhttp3:okhttp:4.9.1"
 }

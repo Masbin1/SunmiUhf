@@ -111,14 +111,15 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_bias="0.934" />
 
-        <TextView
+        <Button
             android:id="@+id/can_stock_picking_match"
             android:layout_width="420dp"
             android:layout_height="57dp"
-            android:background="#FF5722"
+            android:background="#2196F3"
             android:gravity="center_horizontal"
             android:paddingTop="15dp"
-            android:text="Scanning"
+            android:onClick="@{()-> vm.sendDataPickingToOdoo()}"
+            android:text="Check In"
             android:textColor="#FFFFFF"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
