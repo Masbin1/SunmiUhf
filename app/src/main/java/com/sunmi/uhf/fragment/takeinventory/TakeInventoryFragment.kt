@@ -17,6 +17,7 @@ import android.view.LayoutInflater
 import android.widget.Button
 import android.widget.PopupWindow
 import android.widget.TextView
+import android.widget.Toast
 import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -30,6 +31,7 @@ import com.sunmi.rfid.constant.CMD
 import com.sunmi.rfid.constant.ParamCts
 import com.sunmi.rfid.entity.DataParameter
 import com.sunmi.uhf.App
+import com.sunmi.uhf.MainActivity
 import com.sunmi.uhf.R
 import com.sunmi.uhf.adapter.LabelInfoAdapter
 import com.sunmi.uhf.adapter.TakeModelAdapter
@@ -41,6 +43,7 @@ import com.sunmi.uhf.databinding.FragmentTakeInventoryBinding
 import com.sunmi.uhf.dialog.SureBackDialog
 import com.sunmi.uhf.event.SimpleViewEvent
 import com.sunmi.uhf.fragment.ReadBaseFragment
+import com.sunmi.uhf.fragment.home.HomeFragment
 import com.sunmi.uhf.utils.*
 import com.sunmi.uhf.view.RecycleDivider
 import com.sunmi.widget.dialog.InputDialog
@@ -655,7 +658,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     }
 
     private val client = OkHttpClient()
-    private val url = "https://loyal-martin-present.ngrok-free.app/arrive/product/picking"
+    private val url = "https://infinite-suitable-quetzal.ngrok-free.app/arrive/product/picking"
 
     data class RfidStatus(val idLine: Int, val rfid: String, val status: String, val quantity_done: Float)
 
@@ -699,6 +702,16 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                         val responseBody = response.body?.string()
                         println("Server response: $responseBody") // Log respons server
                         handleSuccessResponse(responseBody)
+                        activity?.runOnUiThread {
+                            Toast.makeText(activity, responseBody, Toast.LENGTH_LONG).show()
+                            TemporaryStorage.clearEpcs()
+                            stockPickingList = emptyList()
+                            // Navigate to HomeFragment
+                            (activity as? MainActivity)?.let { mainActivity ->
+                                mainActivity.navigateToHomeFragment()
+                            }
+                        }
+
                     } else {
                         println("Error response: ${response.code} - ${response.message}") // Log error
                         handleErrorResponse(response.code)
@@ -748,7 +761,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
             .build()
 
         val request = Request.Builder()
-            .url("https://loyal-martin-present.ngrok-free.app/rfid/scan/repairing")
+            .url("https://infinite-suitable-quetzal.ngrok-free.app/rfid/scan/repairing")
             .post(formBody)
             .build()
 
@@ -766,10 +779,17 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                         throw IOException("Unexpected code $response")
                     }
 
-                    // Handle successful response
                     val responseBody = response.body?.string()
-                    // Process the response body here
-                    // You might want to parse the response or update UI based on it
+
+                    activity?.runOnUiThread {
+                        Toast.makeText(activity, responseBody, Toast.LENGTH_LONG).show()
+                        TemporaryStorage.clearEpcs()
+
+                        // Navigate to HomeFragment
+                        (activity as? MainActivity)?.let { mainActivity ->
+                            mainActivity.navigateToHomeFragment()
+                        }
+                    }
                 }
             }
         })

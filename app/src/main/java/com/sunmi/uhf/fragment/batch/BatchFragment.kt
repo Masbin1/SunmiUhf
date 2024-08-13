@@ -69,7 +69,7 @@ class BatchFragment : Fragment() {
 
     private fun fetchDataFromApi() {
         val queue: RequestQueue = Volley.newRequestQueue(activity)
-        val url = "https://loyal-martin-present.ngrok-free.app/get/batch/picking"
+        val url = "https://infinite-suitable-quetzal.ngrok-free.app/get/batch/picking"
 
         val stringRequest = StringRequest(
             Request.Method.GET, url,

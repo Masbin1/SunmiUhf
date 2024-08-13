@@ -101,6 +101,14 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         )
     }
 
+    fun navigateToHomeFragment() {
+        switchFragment(
+            HomeFragment.newInstance(null),
+            addToBackStack = true,
+            clearStack = true
+        )
+    }
+
     override fun onLandScape() {
     }
 

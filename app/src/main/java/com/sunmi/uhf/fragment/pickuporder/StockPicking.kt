@@ -90,7 +90,7 @@ class StockPicking : Fragment() {
 
     private fun validatePin(pin: String) {
         val queue: RequestQueue = Volley.newRequestQueue(activity)
-        val url = "https://loyal-martin-present.ngrok-free.app/get/stock/picking"
+        val url = "https://infinite-suitable-quetzal.ngrok-free.app/get/stock/picking"
 
         val stringRequest = object : StringRequest(
             Request.Method.POST, url,
