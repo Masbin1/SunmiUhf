@@ -658,7 +658,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
 
     data class RfidStatus(val idLine: Int, val rfid: String, val status: String, val quantity_done: Float)
 
-    fun sendDataDeliverToOdoo() {
+    private fun sendDataDeliverToOdoo() {
         val listOfRfidTemporary = TemporaryStorage.getAllEpcs()
         val listDeliveryOrder = deliveryItemList
 
@@ -673,7 +673,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         sendDeliverToServer(matchedRfidListDelivery)
     }
 
-    fun sendDataPickingToOdoo() {
+    private fun sendDataPickingToOdoo() {
         val listOfRfidTemporary = TemporaryStorage.getAllEpcs()
         val listStockPicking = stockPickingList
 
@@ -709,35 +709,40 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                println("Sending request to server: $url with data: $matchedRfidListDelivery")
                 val response = client.newCall(request).execute()
+                val responseBody = response.body?.string()
+                println("Raw response: $responseBody")
                 withContext(Dispatchers.Main) {
                     if (response.isSuccessful) {
-                        val responseBody = response.body?.string()
-                        println("Server response: $responseBody") // Log respons server
+                        println("Response successful: ${response.code}")
                         handleSuccessResponse(responseBody)
                         activity?.runOnUiThread {
                             Toast.makeText(activity, responseBody, Toast.LENGTH_LONG).show()
                             TemporaryStorage.clearEpcs()
                             deliveryItemList = emptyList()
-                            // Navigate to HomeFragment
-                            (activity as? MainActivity)?.let { mainActivity ->
-                                mainActivity.navigateToHomeFragment()
-                            }
+                            (activity as? MainActivity)?.navigateToHomeFragment()
                         }
-
                     } else {
-                        println("Error response: ${response.code} - ${response.message}") // Log error
+                        println("Error response: ${response.code} - ${response.message}")
                         handleErrorResponse(response.code)
                     }
                 }
             } catch (e: IOException) {
                 withContext(Dispatchers.Main) {
-                    println("Network error: ${e.message}") // Log network error
+                    println("Network error: ${e.message}")
                     handleFailure(e)
+                    activity?.runOnUiThread {
+                        Toast.makeText(activity, "Network error", Toast.LENGTH_LONG).show()
+                        TemporaryStorage.clearEpcs()
+                        deliveryItemList = emptyList()
+                        (activity as? MainActivity)?.navigateToHomeFragment()
+                    }
                 }
             }
         }
     }
+
 
     private fun sendToServer(matchedRfidList: List<RfidStatus>) {
         val formBuilder = FormBody.Builder()
@@ -1067,52 +1072,39 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     ): View? {
         val view = super.onCreateView(inflater, container, savedInstanceState)
 
-        // Ambil reference ke TextView dan CardView
-        val pickupInfoTextView: TextView = view!!.findViewById(R.id.pickupInfoTextView)
-        val cardViewPickupInfo: CardView = view!!.findViewById(R.id.cardViewPickupInfo)
+        // Helper function to set TextView visibility based on a list's content
+        fun setViewVisibility(view: View, condition: Boolean) {
+            view.visibility = if (condition) View.VISIBLE else View.INVISIBLE
+        }
 
-        // Ambil data batchItem dari binding atau dari sumber data Anda
+        // Initialize views
+        val pickupInfoTextView: TextView = view!!.findViewById(R.id.pickupInfoTextView)
+        val cardViewPickupInfo: CardView = view.findViewById(R.id.cardViewPickupInfo)
+        val canStockPickingMatchTextView: TextView = view.findViewById(R.id.can_stock_picking_match)
+        val canDeliveryMatchTextView: TextView = view.findViewById(R.id.checkout_delivery_order)
+        val sendDataRepair: Button = view.findViewById(R.id.send_data_repair)
+
+        // Update pickupInfoTextView and cardViewPickupInfo based on batchItem
         batchItem?.let { item ->
-            // Isi TextView dengan data batchItem
             pickupInfoTextView.text = """
             ID Pickup: ${item.idBatch}
             Name: ${item.name}
             Responsible: ${item.responsible}
-            
         """.trimIndent()
-
-            // Tampilkan CardView jika ada data, sembunyikan jika tidak ada
             cardViewPickupInfo.visibility = View.VISIBLE
         } ?: run {
-            // Jika batchItem null, sembunyikan CardView
             cardViewPickupInfo.visibility = View.GONE
         }
 
-        val canStockPickingMatchTextView: TextView = view.findViewById(R.id.can_stock_picking_match)
-
-        // Set the visibility based on whether stockPickingList is empty or not
-        if (stockPickingList.isNotEmpty()) {
-            canStockPickingMatchTextView.visibility = View.VISIBLE
-        } else {
-            canStockPickingMatchTextView.visibility = View.INVISIBLE
-        }
-
-        val canDeliveryMatchTextView: TextView = view.findViewById(R.id.checkout_delivery_order)
-
-        // Set the visibility based on whether stockPickingList is empty or not
-        if (deliveryItemList.isNotEmpty()) {
-            canDeliveryMatchTextView.visibility = View.VISIBLE
-        } else {
-            canDeliveryMatchTextView.visibility = View.INVISIBLE
-        }
-
-        val sendDataRepair: Button = view.findViewById(R.id.send_data_repair)
-
-        // Atur visibilitas sendDataRepair berdasarkan isi TemporaryStorage
+        // Update visibility based on stockPickingList and deliveryItemList
+        setViewVisibility(canStockPickingMatchTextView, stockPickingList.isNotEmpty())
+        setViewVisibility(canDeliveryMatchTextView, deliveryItemList.isNotEmpty())
+        // Update visibility for sendDataRepair based on TemporaryStorage content
         updateSendDataRepairVisibility(sendDataRepair)
 
         return view
     }
+
 
 
     companion object {
