@@ -85,6 +85,13 @@ class TakeInventoryModel : BaseViewModel() {
         _sendDataEventPicking.value = Unit
     }
 
+    private val _sendDataEventDeliver = MutableLiveData<Unit>()
+    val sendDataEventDeliver: LiveData<Unit> get() = _sendDataEventDeliver
+
+    fun sendDataDeliveryToOdoo(){
+        _sendDataEventDeliver.value = Unit
+    }
+
     /**
      * 选择 全选
      */
