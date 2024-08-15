@@ -1,16 +1,16 @@
-package com.sunmi.uhf.fragment.pickuporder
-import StockPickingAdapter
-import StockPickingItem
+package com.sunmi.uhf.fragment.delivery
+import DeliveryItemAdapter
+import DeliveryItemList
 import android.app.AlertDialog
 import android.os.Bundle
 import android.text.InputType
+import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
-import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.android.volley.Request
@@ -23,35 +23,35 @@ import com.sunmi.uhf.fragment.takeinventory.TakeInventoryFragment
 import org.json.JSONArray
 import org.json.JSONObject
 
-class StockPicking : Fragment() {
+class DeliveryFragment : Fragment() {
 
     private lateinit var recyclerView: RecyclerView
-    private lateinit var stockPickingAdapter: StockPickingAdapter
-    private val stockPickingList = mutableListOf<StockPickingItem>()
+    private lateinit var deliveryItemAdapter: DeliveryItemAdapter
+    private val deliveryItemOrderList = mutableListOf<DeliveryItemList>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val view = inflater.inflate(R.layout.fragment_stock_picking, container, false)
+        val view = inflater.inflate(R.layout.fragment_delivery, container, false)
 
-        recyclerView = view.findViewById(R.id.recyclerViewstockPicking)
+        recyclerView = view.findViewById(R.id.recyclerViewDeliver)
         recyclerView.layoutManager = LinearLayoutManager(context)
-        stockPickingAdapter = StockPickingAdapter(stockPickingList) { stockPickingItem ->
-            // Handle individual item click if needed
-            // For example, you could show details of the clicked item
-        }
-        recyclerView.adapter = stockPickingAdapter
+        deliveryItemAdapter = DeliveryItemAdapter(deliveryItemOrderList) { deliveryItemList ->
 
-        val getMyListTextView: TextView = view.findViewById(R.id.get_my_list_stockPicking)
+
+        }
+        recyclerView.adapter = deliveryItemAdapter
+
+        val getMyListTextView: TextView = view.findViewById(R.id.get_my_list_delivery)
         getMyListTextView.setOnClickListener {
             showPinInputDialog()
         }
 
-        val scanstockPickingTextView: TextView = view.findViewById(R.id.scan_stockPicking)
+        val scanstockPickingTextView: TextView = view.findViewById(R.id.scan_delivery)
         scanstockPickingTextView.setOnClickListener {
-            if (stockPickingList.isNotEmpty()) {
-                openTakeInventoryFragment(stockPickingList)
+            if (deliveryItemOrderList.isNotEmpty()) {
+                openTakeInventoryFragment(deliveryItemOrderList)
             } else {
                 Toast.makeText(activity, "No stockPicking items available", Toast.LENGTH_SHORT).show()
             }
@@ -61,10 +61,10 @@ class StockPicking : Fragment() {
     }
 
 
-    private fun openTakeInventoryFragment(stockPickingList: List<StockPickingItem>) {
-        val takeInventoryFragment = TakeInventoryFragment.newInstance(stockPickingList)
+    private fun openTakeInventoryFragment(deliveryItemOrderList: List<DeliveryItemList>) {
+        val takeInventoryFragment = TakeInventoryFragment.newInstanceFromDelivery(deliveryItemOrderList)
         parentFragmentManager.beginTransaction()
-            .replace(R.id.frameLayoutstockPicking, takeInventoryFragment)
+            .replace(R.id.frameLayoutDelivery, takeInventoryFragment)
             .addToBackStack(null)
             .commit()
     }
@@ -90,7 +90,7 @@ class StockPicking : Fragment() {
 
     private fun validatePin(pin: String) {
         val queue: RequestQueue = Volley.newRequestQueue(activity)
-        val url = "https://infinite-suitable-quetzal.ngrok-free.app/get/stock/picking"
+        val url = "https://infinite-suitable-quetzal.ngrok-free.app/get/stock/picking/delivery"
 
         val stringRequest = object : StringRequest(
             Request.Method.POST, url,
@@ -124,12 +124,12 @@ class StockPicking : Fragment() {
             val status = jsonObject.getString("status")
 
             if (status == "success") {
-                val stockPickingOrders: JSONArray = jsonObject.getJSONArray("pickup_orders")
-                stockPickingList.clear()
+                val deliveryItemOrders: JSONArray = jsonObject.getJSONArray("pickup_orders")
+                deliveryItemOrderList.clear()
 
-                for (i in 0 until stockPickingOrders.length()) {
-                    val order = stockPickingOrders.getJSONObject(i)
-                    val stockPickingItem = StockPickingItem(
+                for (i in 0 until deliveryItemOrders.length()) {
+                    val order = deliveryItemOrders.getJSONObject(i)
+                    val deliveryItemListSend = DeliveryItemList(
                         idPickup = order.getInt("id_pickup"),
                         name = order.getString("name"),
                         idLine = order.getInt("id_line"),
@@ -140,9 +140,9 @@ class StockPicking : Fragment() {
                         pin = order.getString("pin"),
                         rfid = order.getString("rfid"),
                     )
-                    stockPickingList.add(stockPickingItem)
+                    deliveryItemOrderList.add(deliveryItemListSend)
                 }
-                stockPickingAdapter.notifyDataSetChanged()
+                deliveryItemAdapter.notifyDataSetChanged()
             } else {
                 val errorMessage = jsonObject.getString("message")
                 Toast.makeText(activity, "Error: $errorMessage", Toast.LENGTH_LONG).show()
@@ -155,6 +155,6 @@ class StockPicking : Fragment() {
 
 
     companion object {
-        fun newInstance(nothing: Nothing?) = StockPicking()
+        fun newInstance(nothing: Nothing?) = DeliveryFragment()
     }
 }

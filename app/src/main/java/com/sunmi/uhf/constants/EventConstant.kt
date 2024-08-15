@@ -35,6 +35,9 @@ object EventConstant {
 //    ini untuk repair
     const val EVENT_STOCK_PICKING = 1102
 
+//    ini untuk deliver order
+    const val EVENT_DELIVER_ITEM = 1103
+
     /** 点击盘存模式 */
     const val EVENT_TAKE_MODEL = 1006
 

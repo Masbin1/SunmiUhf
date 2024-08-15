@@ -2,11 +2,11 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/frameLayoutbatch"
+    android:id="@+id/frameLayoutDelivery"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/defaultMainColor"
-    tools:context=".fragment.batch.BatchFragment">
+    tools:context=".fragment.delivery.DeliveryFragment">
 
     <TextView
         android:id="@+id/list_batch"
@@ -15,7 +15,7 @@
         android:background="#03A9F4"
         android:gravity="center_horizontal"
         android:paddingTop="15dp"
-        android:text="List Pick Up"
+        android:text="List Delivery"
         android:textColor="#FFFFFF"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -25,11 +25,11 @@
         app:layout_constraintVertical_bias="0.0" />
 
     <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewbatch"
+        android:id="@+id/recyclerViewDeliver"
         android:layout_width="394dp"
         android:layout_height="620dp"
         android:layout_marginBottom="16dp"
-        app:layout_constraintBottom_toTopOf="@id/get_my_list_batch"
+        app:layout_constraintBottom_toTopOf="@id/get_my_list_delivery"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.47"
         app:layout_constraintStart_toStartOf="parent"
@@ -37,7 +37,7 @@
         app:layout_constraintVertical_bias="0.528" />
 
     <TextView
-        android:id="@+id/scan_batch"
+        android:id="@+id/scan_delivery"
         android:layout_width="420dp"
         android:layout_height="57dp"
         android:background="#FF5722"
@@ -47,19 +47,19 @@
         android:textColor="#FFFFFF"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.444"
+        app:layout_constraintHorizontal_bias="0.555"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.915" />
+        app:layout_constraintVertical_bias="0.934" />
 
     <TextView
-        android:id="@+id/get_my_list_batch"
+        android:id="@+id/get_my_list_delivery"
         android:layout_width="420dp"
         android:layout_height="57dp"
         android:background="#03A9F4"
         android:gravity="center_horizontal"
         android:paddingTop="15dp"
-        android:text="Get List Pickup"
+        android:text="Get List Delivery"
         android:textColor="#FFFFFF"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

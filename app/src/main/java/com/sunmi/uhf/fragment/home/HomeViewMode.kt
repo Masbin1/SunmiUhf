@@ -49,6 +49,10 @@ class HomeViewMode : BaseViewModel() {
         EventConstant.EVENT_BATCH.publish()
     }
 
+    fun onDeliveryItem(){
+        EventConstant.EVENT_DELIVER_ITEM.publish()
+    }
+
     fun onStockPicking() {
         EventConstant.EVENT_STOCK_PICKING.publish()
     }

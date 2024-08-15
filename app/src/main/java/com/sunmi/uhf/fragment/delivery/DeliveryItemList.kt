@@ -2,7 +2,7 @@ import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 import android.os.Parcel
 
-data class StockPickingItem(
+data class DeliveryItemList(
     val idPickup: Int,
     val name: String,
     val idLine: Int,
@@ -41,12 +41,12 @@ data class StockPickingItem(
         return 0
     }
 
-    companion object CREATOR : Parcelable.Creator<StockPickingItem> {
-        override fun createFromParcel(parcel: Parcel): StockPickingItem {
-            return StockPickingItem(parcel)
+    companion object CREATOR : Parcelable.Creator<DeliveryItemList> {
+        override fun createFromParcel(parcel: Parcel): DeliveryItemList {
+            return DeliveryItemList(parcel)
         }
 
-        override fun newArray(size: Int): Array<StockPickingItem?> {
+        override fun newArray(size: Int): Array<DeliveryItemList?> {
             return arrayOfNulls(size)
         }
     }

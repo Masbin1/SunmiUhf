@@ -1,6 +1,7 @@
 package com.sunmi.uhf.fragment.takeinventory
 
 import BatchItem
+import DeliveryItemList
 import StockPickingItem
 import android.Manifest
 import android.content.BroadcastReceiver
@@ -43,7 +44,6 @@ import com.sunmi.uhf.databinding.FragmentTakeInventoryBinding
 import com.sunmi.uhf.dialog.SureBackDialog
 import com.sunmi.uhf.event.SimpleViewEvent
 import com.sunmi.uhf.fragment.ReadBaseFragment
-import com.sunmi.uhf.fragment.home.HomeFragment
 import com.sunmi.uhf.utils.*
 import com.sunmi.uhf.view.RecycleDivider
 import com.sunmi.widget.dialog.InputDialog
@@ -59,10 +59,7 @@ import okhttp3.Request
 import okhttp3.Callback
 import okhttp3.Call
 import okhttp3.Response
-import org.json.JSONArray
-import org.json.JSONObject
 import kotlinx.coroutines.*
-import okhttp3.MediaType.Companion.toMediaType
 
 
 /**
@@ -93,6 +90,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     private var rate = -1
     private var autoPower = Config.DEF_TAKE_AUTO_POWER
     private lateinit var stockPickingList: List<StockPickingItem>
+    private lateinit var deliveryItemList: List<DeliveryItemList>
     private val br = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
@@ -989,6 +987,9 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         arguments?.let {
             stockPickingList = it.getParcelableArrayList(ARG_STOCK_PICKING_LIST) ?: emptyList()
         }
+        arguments?.let {
+            deliveryItemList = it.getParcelableArrayList(ARG_DELIVERY_ITEM_LIST) ?: emptyList()
+        }
     }
 
     override fun onCreateView(
@@ -1038,14 +1039,12 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
 
     companion object {
         private const val ARG_PICKUP_ITEM = "pickup_item"
-
         fun newInstance(batchItem: BatchItem?) = TakeInventoryFragment().apply {
             arguments = Bundle().apply {
                 putParcelable(ARG_PICKUP_ITEM, batchItem)
             }
         }
         private const val ARG_STOCK_PICKING_LIST = "stock_picking_list"
-
         fun newInstance(stockPickingList: List<StockPickingItem>): TakeInventoryFragment {
             val fragment = TakeInventoryFragment()
             val args = Bundle()
@@ -1054,6 +1053,15 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
             return fragment
         }
 
+        private const val ARG_DELIVERY_ITEM_LIST = "delivery_item_list"
+
+        fun newInstanceFromDelivery(deliveryItemOrderList: List<DeliveryItemList>): TakeInventoryFragment {
+            val fragment = TakeInventoryFragment()
+            val args = Bundle()
+            args.putParcelableArrayList(ARG_DELIVERY_ITEM_LIST, ArrayList(deliveryItemOrderList))
+            fragment.arguments = args
+            return fragment
+        }
 
         const val REQUEST_PERMISSION_ID = 101
     }

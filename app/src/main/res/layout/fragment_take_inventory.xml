@@ -158,7 +158,7 @@
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/label_rv"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
+                    android:layout_height="422dp" />
             </LinearLayout>
         </HorizontalScrollView>
 

@@ -20,6 +20,7 @@ import com.sunmi.uhf.constants.Config
 import com.sunmi.uhf.constants.EventConstant
 import com.sunmi.uhf.databinding.FragmentHomeBinding
 import com.sunmi.uhf.event.SimpleViewEvent
+import com.sunmi.uhf.fragment.delivery.DeliveryFragment
 import com.sunmi.uhf.fragment.filter.LabelFilterFragment
 import com.sunmi.uhf.fragment.location.LabelLocationFragment
 import com.sunmi.uhf.fragment.operation.LabelOperationFragment
@@ -153,6 +154,16 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                 //This is for repair order check
                 switchFragment(
                     StockPicking.newInstance(null),
+                    addToBackStack = true,
+                    clearStack = false
+                )
+            }
+
+
+            EventConstant.EVENT_DELIVER_ITEM -> {
+//                This is for deliver item to customer
+                switchFragment(
+                    DeliveryFragment.newInstance(null),
                     addToBackStack = true,
                     clearStack = false
                 )
