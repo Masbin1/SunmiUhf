@@ -709,35 +709,31 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                println("Sending request to server: $url with data: $matchedRfidListDelivery")
                 val response = client.newCall(request).execute()
-                val responseBody = response.body?.string()
-                println("Raw response: $responseBody")
                 withContext(Dispatchers.Main) {
                     if (response.isSuccessful) {
-                        println("Response successful: ${response.code}")
+                        val responseBody = response.body?.string()
+                        println("Server response: $responseBody") // Log respons server
                         handleSuccessResponse(responseBody)
                         activity?.runOnUiThread {
                             Toast.makeText(activity, responseBody, Toast.LENGTH_LONG).show()
                             TemporaryStorage.clearEpcs()
                             deliveryItemList = emptyList()
-                            (activity as? MainActivity)?.navigateToHomeFragment()
+                            // Navigate to HomeFragment
+                            (activity as? MainActivity)?.let { mainActivity ->
+                                mainActivity.navigateToHomeFragment()
+                            }
                         }
+
                     } else {
-                        println("Error response: ${response.code} - ${response.message}")
+                        println("Error response: ${response.code} - ${response.message}") // Log error
                         handleErrorResponse(response.code)
                     }
                 }
             } catch (e: IOException) {
                 withContext(Dispatchers.Main) {
-                    println("Network error: ${e.message}")
+                    println("Network error: ${e.message}") // Log network error
                     handleFailure(e)
-                    activity?.runOnUiThread {
-                        Toast.makeText(activity, "Network error", Toast.LENGTH_LONG).show()
-                        TemporaryStorage.clearEpcs()
-                        deliveryItemList = emptyList()
-                        (activity as? MainActivity)?.navigateToHomeFragment()
-                    }
                 }
             }
         }
