@@ -1,14 +1,11 @@
 package com.sunmi.uhf.fragment.delivery
 import DeliveryItemAdapter
 import DeliveryItemList
-import android.app.AlertDialog
 import android.os.Bundle
-import android.text.InputType
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -18,6 +15,7 @@ import com.android.volley.RequestQueue
 import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
+import com.sunmi.uhf.BuildConfig
 import com.sunmi.uhf.R
 import com.sunmi.uhf.fragment.takeinventory.TakeInventoryFragment
 import org.json.JSONArray
@@ -43,23 +41,24 @@ class DeliveryFragment : Fragment() {
         }
         recyclerView.adapter = deliveryItemAdapter
 
-        val getMyListTextView: TextView = view.findViewById(R.id.get_my_list_delivery)
-        getMyListTextView.setOnClickListener {
-            showPinInputDialog()
-        }
-
         val scanstockPickingTextView: TextView = view.findViewById(R.id.scan_delivery)
         scanstockPickingTextView.setOnClickListener {
             if (deliveryItemOrderList.isNotEmpty()) {
                 openTakeInventoryFragment(deliveryItemOrderList)
             } else {
-                Toast.makeText(activity, "No stockPicking items available", Toast.LENGTH_SHORT).show()
+                Toast.makeText(activity, "No delivery items available", Toast.LENGTH_SHORT).show()
             }
         }
 
         return view
     }
 
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        if (deliveryItemOrderList.isEmpty()) {
+            fetchDeliveryOrders()
+        }
+    }
 
     private fun openTakeInventoryFragment(deliveryItemOrderList: List<DeliveryItemList>) {
         val takeInventoryFragment = TakeInventoryFragment.newInstanceFromDelivery(deliveryItemOrderList)
@@ -69,32 +68,15 @@ class DeliveryFragment : Fragment() {
             .commit()
     }
 
-    private fun showPinInputDialog() {
-        val builder = AlertDialog.Builder(activity)
-        builder.setTitle("Enter PIN")
-
-        val input = EditText(activity)
-        input.inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
-        builder.setView(input)
-
-        builder.setPositiveButton("OK") { dialog, which ->
-            val pin = input.text.toString()
-            validatePin(pin)
-        }
-        builder.setNegativeButton("Cancel") { dialog, which ->
-            dialog.cancel()
-        }
-
-        builder.show()
-    }
-
-    private fun validatePin(pin: String) {
+    private fun fetchDeliveryOrders() {
         val queue: RequestQueue = Volley.newRequestQueue(activity)
-        val url = "https://infinite-suitable-quetzal.ngrok-free.app/get/stock/picking/delivery"
+        val server = BuildConfig.SERVER_URL
+        val apiKey = BuildConfig.API_KEY
+        val url = "$server/get/stock/picking/delivery"
 
-        val stringRequest = object : StringRequest(
+        val stringRequest = StringRequest(
             Request.Method.POST, url,
-            Response.Listener<String> { response ->
+            { response ->
                 val jsonResponse = JSONObject(response)
                 val status = jsonResponse.getString("status")
                 if (status == "success") {
@@ -104,16 +86,11 @@ class DeliveryFragment : Fragment() {
                     Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()
                 }
             },
-            Response.ErrorListener { error ->
+            { error ->
                 error.printStackTrace()
                 Toast.makeText(activity, "Error: ${error.message}", Toast.LENGTH_LONG).show()
-            }) {
-            override fun getParams(): Map<String, String> {
-                val params = HashMap<String, String>()
-                params["pin"] = pin
-                return params
             }
-        }
+        )
 
         queue.add(stringRequest)
     }

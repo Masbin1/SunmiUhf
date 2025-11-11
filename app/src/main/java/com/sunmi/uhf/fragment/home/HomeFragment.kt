@@ -161,7 +161,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
 
 
             EventConstant.EVENT_DELIVER_ITEM -> {
-//                This is for deliver item to customer
+//                This is for Delivery Order to customer
                 switchFragment(
                     DeliveryFragment.newInstance(null),
                     addToBackStack = true,
