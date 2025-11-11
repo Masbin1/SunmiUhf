@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F7F8FA">
+
+    <!-- Loading ProgressBar -->
+    <ProgressBar
+        android:id="@+id/progressBarDetail"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
+    <!-- Content -->
+    <LinearLayout
+        android:id="@+id/contentLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:visibility="gone">
+
+        <!-- Card untuk Info Picking -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:elevation="6dp"
+            android:padding="12dp"
+            android:backgroundTint="@android:color/white"
+            android:radius="12dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/textViewDetailName"
+                    android:text="Name"
+                    android:textStyle="bold"
+                    android:textSize="18sp"
+                    android:textColor="#1E1E1E"
+                    android:paddingBottom="4dp" />
+
+                <TextView
+                    android:id="@+id/textViewDetailPartner"
+                    android:text="Partner"
+                    android:textSize="15sp"
+                    android:textColor="#555"
+                    android:paddingBottom="2dp" />
+
+                <TextView
+                    android:id="@+id/textViewDetailScheduledDate"
+                    android:text="Scheduled Date"
+                    android:textSize="14sp"
+                    android:textColor="#777"
+                    android:paddingBottom="2dp" />
+
+                <TextView
+                    android:id="@+id/textViewDetailState"
+                    android:text="State"
+                    android:textSize="14sp"
+                    android:textColor="#2196F3"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Label -->
+        <TextView
+            android:text="Move Lines"
+            android:textStyle="bold"
+            android:textColor="#1E1E1E"
+            android:textSize="16sp"
+            android:layout_marginBottom="6dp" />
+
+        <!-- RecyclerView untuk move lines -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewMoves"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="8dp" />
+    </LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

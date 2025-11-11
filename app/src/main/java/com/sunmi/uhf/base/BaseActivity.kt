@@ -176,9 +176,6 @@ abstract class BaseActivity<T : ViewDataBinding> : AppCompatActivity() {
      * 展示等待层
      */
     fun showDialog() {
-        if (null == dialog) {
-            initLoadingDialog()
-        }
         if (!dialog.isShowing) {
             dialog.show()
         }
@@ -188,7 +185,7 @@ abstract class BaseActivity<T : ViewDataBinding> : AppCompatActivity() {
      * 隐藏等待层
      */
     fun hideDialog() {
-        if (null != dialog && dialog.isShowing) {
+        if (dialog.isShowing) {
             dialog.dismiss()
         }
     }

@@ -171,7 +171,7 @@
             android:layout_marginTop="5dp"
             android:background="@color/labelPickupColor"
             android:gravity="center_horizontal"
-            android:onClick="@{()->vm.onStockPicking()}"
+            android:onClick="@{()->vm.onReceivingNotes()}"
             android:paddingTop="15dp"
             android:text="Receiving Notes"
             android:textColor="@color/white"

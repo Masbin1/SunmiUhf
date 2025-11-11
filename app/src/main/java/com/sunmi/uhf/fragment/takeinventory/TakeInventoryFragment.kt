@@ -1,7 +1,8 @@
 package com.sunmi.uhf.fragment.takeinventory
 
 import BatchItem
-import DeliveryItemList
+//import com.sunmi.uhf.fragment.delivery.DeliveryItemList
+import com.sunmi.uhf.fragment.deliveryorder.DeliveryMoveItem
 import StockPickingItem
 import android.Manifest
 import android.content.BroadcastReceiver
@@ -90,7 +91,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     private var rate = -1
     private var autoPower = Config.DEF_TAKE_AUTO_POWER
     private lateinit var stockPickingList: List<StockPickingItem>
-    private lateinit var deliveryItemList: List<DeliveryItemList>
+//    private lateinit var deliveryItemList: List<DeliveryItemList>
     private val br = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
@@ -660,17 +661,17 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
 
     private fun sendDataDeliverToOdoo() {
         val listOfRfidTemporary = TemporaryStorage.getAllEpcs()
-        val listDeliveryOrder = deliveryItemList
+//        val listDeliveryOrder = deliveryItemList
 
-        val matchedRfidListDelivery = listDeliveryOrder.map { deliveryItemList ->
-            if (listOfRfidTemporary.contains(deliveryItemList.rfid)) {
-                RfidStatus(deliveryItemList.idLine, deliveryItemList.rfid, "match", 1.0F)
-            } else {
-                RfidStatus(deliveryItemList.idLine, deliveryItemList.rfid, "not_match", 0.0F)
-            }
-        }
-
-        sendDeliverToServer(matchedRfidListDelivery)
+//        val matchedRfidListDelivery = listDeliveryOrder.map { deliveryItemList ->
+//            if (listOfRfidTemporary.contains(deliveryItemList.rfid)) {
+//                RfidStatus(deliveryItemList.idLine, deliveryItemList.rfid, "match", 1.0F)
+//            } else {
+//                RfidStatus(deliveryItemList.idLine, deliveryItemList.rfid, "not_match", 0.0F)
+//            }
+//        }
+//
+//        sendDeliverToServer(matchedRfidListDelivery)
     }
 
     private fun sendDataPickingToOdoo() {
@@ -718,7 +719,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                         activity?.runOnUiThread {
                             Toast.makeText(activity, responseBody, Toast.LENGTH_LONG).show()
                             TemporaryStorage.clearEpcs()
-                            deliveryItemList = emptyList()
+//                            deliveryItemList = emptyList()
                             // Navigate to HomeFragment
                             (activity as? MainActivity)?.let { mainActivity ->
                                 mainActivity.navigateToHomeFragment()
@@ -1057,9 +1058,9 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         arguments?.let {
             stockPickingList = it.getParcelableArrayList(ARG_STOCK_PICKING_LIST) ?: emptyList()
         }
-        arguments?.let {
-            deliveryItemList = it.getParcelableArrayList(ARG_DELIVERY_ITEM_LIST) ?: emptyList()
-        }
+//        arguments?.let {
+//            deliveryItemList = it.getParcelableArrayList(ARG_DELIVERY_ITEM_LIST) ?: emptyList()
+//        }
     }
 
     override fun onCreateView(
@@ -1094,7 +1095,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
 
         // Update visibility based on stockPickingList and deliveryItemList
         setViewVisibility(canStockPickingMatchTextView, stockPickingList.isNotEmpty())
-        setViewVisibility(canDeliveryMatchTextView, deliveryItemList.isNotEmpty())
+//        setViewVisibility(canDeliveryMatchTextView, deliveryItemList.isNotEmpty())
         // Update visibility for sendDataRepair based on TemporaryStorage content
         updateSendDataRepairVisibility(sendDataRepair)
 
@@ -1121,13 +1122,13 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
 
         private const val ARG_DELIVERY_ITEM_LIST = "delivery_item_list"
 
-        fun newInstanceFromDelivery(deliveryItemOrderList: List<DeliveryItemList>): TakeInventoryFragment {
-            val fragment = TakeInventoryFragment()
-            val args = Bundle()
-            args.putParcelableArrayList(ARG_DELIVERY_ITEM_LIST, ArrayList(deliveryItemOrderList))
-            fragment.arguments = args
-            return fragment
-        }
+//        fun newInstanceFromDelivery(deliveryItemOrderList: List<DeliveryItemList>): TakeInventoryFragment {
+//            val fragment = TakeInventoryFragment()
+//            val args = Bundle()
+//            args.putParcelableArrayList(ARG_DELIVERY_ITEM_LIST, ArrayList(deliveryItemOrderList))
+//            fragment.arguments = args
+//            return fragment
+//        }
 
         const val REQUEST_PERMISSION_ID = 101
     }

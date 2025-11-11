@@ -53,6 +53,10 @@ class HomeViewMode : BaseViewModel() {
         EventConstant.EVENT_DELIVER_ITEM.publish()
     }
 
+    fun onReceivingNotes(){
+        EventConstant.EVENT_RECEIVING_NOTES.publish()
+    }
+
     fun onStockPicking() {
         EventConstant.EVENT_STOCK_PICKING.publish()
     }

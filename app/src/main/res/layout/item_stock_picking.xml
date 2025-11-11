@@ -1,50 +1,75 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
+<androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="4dp">
+    android:padding="12dp"
+    android:background="?attr/selectableItemBackground"
+    android:layout_marginVertical="4dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
+    <TextView
+        android:id="@+id/textViewName"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+        android:text="OUT/00012"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-        <TextView
-            android:id="@+id/textViewIdPickup"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textStyle="bold"/>
+    <TextView
+        android:id="@+id/textViewPartner"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Customer: John Doe"
+        app:layout_constraintTop_toBottomOf="@id/textViewName"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-        <TextView
-            android:id="@+id/textViewName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+    <TextView
+        android:id="@+id/textViewScheduledDate"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Scheduled: 2025-11-10"
+        app:layout_constraintTop_toBottomOf="@id/textViewPartner"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-        <TextView
-            android:id="@+id/textViewIdLine"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+    <TextView
+        android:id="@+id/textViewOrigin"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="Origin: SO0001"
+        app:layout_constraintTop_toBottomOf="@id/textViewScheduledDate"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-        <TextView
-            android:id="@+id/textViewPartner"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+    <TextView
+        android:id="@+id/textViewState"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="State: Done"
+        app:layout_constraintTop_toBottomOf="@id/textViewOrigin"
+        app:layout_constraintStart_toStartOf="parent" />
 
-        <TextView
-            android:id="@+id/textViewState"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+    <TextView
+        android:id="@+id/textViewMoveCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Operations: 5"
+        app:layout_constraintTop_toBottomOf="@id/textViewOrigin"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-        <TextView
-            android:id="@+id/textViewProduct"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+    <TextView
+        android:id="@+id/textViewLocations"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="From: WH/Stock → To: Customers"
+        app:layout_constraintTop_toBottomOf="@id/textViewState"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
-    </LinearLayout>
-
-</androidx.cardview.widget.CardView>
+</androidx.constraintlayout.widget.ConstraintLayout>

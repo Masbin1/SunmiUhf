@@ -53,8 +53,13 @@ class TabFilter1Fragment : BaseFragment<LayoutTabFilterBinding>() {
         override fun onTag(cmd: Byte, state: Byte, tag: DataParameter?) {
             if (BuildConfig.DEBUG) LogUtils.d(
                 "darren",
-                "found tag cmd:" + String.format("%%02X", cmd) + ", state: " + String.format("%%02X", state)
-                        + ("params info: " + tag?.toString() ?: "")
+                buildString {
+                    append("found tag cmd:")
+                    append(String.format("%%02X", cmd))
+                    append(", state: ")
+                    append(String.format("%%02X", state))
+                    append(("params info: " + tag?.toString()))
+                }
             )
         }
 
