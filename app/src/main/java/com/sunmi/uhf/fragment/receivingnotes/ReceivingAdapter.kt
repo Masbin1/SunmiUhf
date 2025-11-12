@@ -4,48 +4,52 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
 import com.sunmi.uhf.R
 
 class ReceivingAdapter(
-    private val receivingList: List<ReceivingItem>,
+    private var receivingList: List<ReceivingItem>,
     private val onItemClick: (ReceivingItem) -> Unit
-) : RecyclerView.Adapter<ReceivingAdapter.ReceivingViewHolder>() {
+) : RecyclerView.Adapter<ReceivingAdapter.ViewHolder>() {
 
-    class ReceivingViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val textViewName: TextView = itemView.findViewById(R.id.textViewName)
-        val textViewPartner: TextView = itemView.findViewById(R.id.textViewPartner)
-        val textViewScheduledDate: TextView = itemView.findViewById(R.id.textViewScheduledDate)
-        val textViewState: TextView = itemView.findViewById(R.id.textViewState)
+    class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val card: CardView = view.findViewById(R.id.cardReceiving)
+        val name: TextView = view.findViewById(R.id.txtReceivingName)
+        val partner: TextView = view.findViewById(R.id.txtPartner)
+        val date: TextView = view.findViewById(R.id.txtScheduledDate)
+        val state: TextView = view.findViewById(R.id.txtState)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReceivingViewHolder {
-        val itemView = LayoutInflater.from(parent.context)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val view = LayoutInflater.from(parent.context)
             .inflate(R.layout.item_receiving, parent, false)
-        return ReceivingViewHolder(itemView)
+        return ViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: ReceivingViewHolder, position: Int) {
-        val currentItem = receivingList[position]
-        holder.textViewName.text = "Name: ${currentItem.name}"
-        holder.textViewPartner.text = "Partner: ${currentItem.partnerName}"
-        holder.textViewScheduledDate.text = "Scheduled: ${currentItem.scheduledDate}"
-        holder.textViewState.text = "State: ${currentItem.state}"
+    override fun getItemCount(): Int = receivingList.size
 
-        holder.itemView.setOnClickListener {
-            onItemClick(currentItem)
-        }
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val item = receivingList[position]
+        holder.name.text = item.name
+        holder.partner.text = item.partnerName
+        holder.date.text = item.scheduledDate
+        holder.state.text = item.state
 
-        // Animasi muncul lembut
+        holder.card.setOnClickListener { onItemClick(item) }
+
+        // Tambahkan animasi lembut untuk setiap item (opsional)
         holder.itemView.alpha = 0f
         holder.itemView.translationY = 50f
         holder.itemView.animate()
             .alpha(1f)
             .translationY(0f)
-            .setDuration(300)
+            .setDuration(250)
             .start()
     }
 
-
-    override fun getItemCount() = receivingList.size
+    fun updateData(newList: List<ReceivingItem>) {
+        receivingList = newList
+        notifyDataSetChanged()
+    }
 }

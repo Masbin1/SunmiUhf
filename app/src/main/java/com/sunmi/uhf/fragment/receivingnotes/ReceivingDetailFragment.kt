@@ -5,37 +5,42 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.android.volley.Request
-import com.android.volley.toolbox.StringRequest
-import com.android.volley.toolbox.Volley
 import com.sunmi.uhf.BuildConfig
 import com.sunmi.uhf.R
+import okhttp3.*
 import org.json.JSONObject
+import java.io.IOException
 
 class ReceivingDetailFragment : Fragment() {
 
-    private var pickingId: Int = 0
-
-    private lateinit var textViewName: TextView
-    private lateinit var textViewPartner: TextView
-    private lateinit var textViewDate: TextView
-    private lateinit var textViewState: TextView
-    private lateinit var recyclerView: RecyclerView
+    private var receivingId: Int = 0
     private lateinit var adapter: ReceivingMoveAdapter
-    private val moveList = mutableListOf<ReceivingMoveItem>()
+    private lateinit var recyclerView: RecyclerView
+    private lateinit var progressBar: ProgressBar
+    private lateinit var txtReceivingName: TextView
+    private lateinit var txtPartner: TextView
+    private lateinit var txtScheduledDate: TextView
+    private lateinit var txtState: TextView
+
+    companion object {
+        fun newInstance(id: Int): ReceivingDetailFragment {
+            val fragment = ReceivingDetailFragment()
+            val args = Bundle()
+            args.putInt("receiving_id", id)
+            fragment.arguments = args
+            return fragment
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        pickingId = arguments?.getInt(ARG_PICKING_ID) ?: 0
+        receivingId = arguments?.getInt("receiving_id") ?: 0
     }
-
-    private lateinit var progressBar: View
-    private lateinit var contentLayout: View
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -43,94 +48,66 @@ class ReceivingDetailFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_receiving_detail, container, false)
 
-        progressBar = view.findViewById(R.id.progressBarDetail)
-        contentLayout = view.findViewById(R.id.contentLayout)
+        txtReceivingName = view.findViewById(R.id.txtReceivingName)
+        txtPartner = view.findViewById(R.id.txtPartner)
+        txtScheduledDate = view.findViewById(R.id.txtScheduledDate)
+        txtState = view.findViewById(R.id.txtState)
+        recyclerView = view.findViewById(R.id.recyclerViewReceiving)
+        progressBar = view.findViewById(R.id.progressBarReceivingDetail)
 
-        textViewName = view.findViewById(R.id.textViewDetailName)
-        textViewPartner = view.findViewById(R.id.textViewDetailPartner)
-        textViewDate = view.findViewById(R.id.textViewDetailScheduledDate)
-        textViewState = view.findViewById(R.id.textViewDetailState)
-        recyclerView = view.findViewById(R.id.recyclerViewMoves)
-
-        recyclerView.layoutManager = LinearLayoutManager(context)
-        adapter = ReceivingMoveAdapter(moveList)
+        adapter = ReceivingMoveAdapter(emptyList())
+        recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
 
-        fetchDetailData()
-
+        loadReceivingDetail()
         return view
     }
 
-    @SuppressLint("NotifyDataSetChanged")
-    private fun fetchDetailData() {
+    private fun loadReceivingDetail() {
         progressBar.visibility = View.VISIBLE
-        contentLayout.visibility = View.GONE
+        val client = OkHttpClient()
+        val request = Request.Builder()
+            .url("${BuildConfig.SERVER_URL}/get/stock/picking/receiving/detail/$receivingId")
+            .build()
 
-        val queue = Volley.newRequestQueue(activity)
-        val url = "${BuildConfig.SERVER_URL}/get/stock/picking/detail/$pickingId"
-
-        val request = StringRequest(
-            Request.Method.GET, url,
-            { response ->
-                try {
-                    val json = JSONObject(response)
-                    if (json.optString("status") == "success") {
-                        val picking = json.getJSONObject("picking")
-                        textViewName.text = picking.getString("name")
-                        textViewPartner.text = picking.optString("partner_name", "-")
-                        textViewDate.text = picking.optString("scheduled_date", "-")
-                        textViewState.text = picking.optString("state", "-")
-
-                        val moves = picking.getJSONArray("moves")
-                        moveList.clear()
-                        for (i in 0 until moves.length()) {
-                            val move = moves.getJSONObject(i)
-                            moveList.add(
-                                ReceivingMoveItem(
-                                    productName = move.optString("product_name", "-"),
-                                    productQty = move.optDouble("product_qty", 0.0),
-                                    uom = move.optString("uom_name", "-")
-                                )
-                            )
-                        }
-                        adapter.notifyDataSetChanged()
-
-                        progressBar.visibility = View.GONE
-                        contentLayout.visibility = View.VISIBLE
-                    } else {
-                        progressBar.visibility = View.GONE
-                        Toast.makeText(
-                            activity,
-                            json.optString("message", "Error"),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                } catch (e: Exception) {
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                requireActivity().runOnUiThread {
                     progressBar.visibility = View.GONE
-                    e.printStackTrace()
-                    Toast.makeText(activity, "Parsing error", Toast.LENGTH_SHORT).show()
                 }
-            },
-            { error ->
-                progressBar.visibility = View.GONE
-                Toast.makeText(activity, "Network error: ${error.message}", Toast.LENGTH_SHORT)
-                    .show()
             }
-        )
 
-        queue.add(request)
-    }
+            @SuppressLint("SetTextI18n")
+            override fun onResponse(call: Call, response: Response) {
+                val jsonData = response.body?.string() ?: return
+                val jsonObj = JSONObject(jsonData)
+                val pickingObj = jsonObj.getJSONObject("picking")
 
+                val moveLines = pickingObj.getJSONArray("move_lines")
+                val list = mutableListOf<ReceivingMoveItem>()
 
-    companion object {
-        private const val ARG_PICKING_ID = "picking_id"
+                for (i in 0 until moveLines.length()) {
+                    val line = moveLines.getJSONObject(i)
+                    list.add(
+                        ReceivingMoveItem(
+                            productName = line.getString("product_name"),
+                            productUomQty = line.getDouble("product_uom_qty"),
+                            quantityDone = line.getDouble("quantity_done"),
+                            uomName = line.getString("uom_name"),
+                            lotName = line.getString("lot_name")
+                        )
+                    )
+                }
 
-        fun newInstance(pickingId: Int): ReceivingDetailFragment {
-            val fragment = ReceivingDetailFragment()
-            val args = Bundle()
-            args.putInt(ARG_PICKING_ID, pickingId)
-            fragment.arguments = args
-            return fragment
-        }
+                requireActivity().runOnUiThread {
+                    txtReceivingName.text = "Receiving Number: ${pickingObj.getString("name")}"
+                    txtPartner.text = "Vendor: ${pickingObj.getString("partner_name")}"
+                    txtScheduledDate.text = "Scheduled Date: ${pickingObj.getString("scheduled_date")}"
+                    txtState.text = "State: ${pickingObj.getString("state")}"
+                    adapter.updateData(list)
+                    progressBar.visibility = View.GONE
+                }
+            }
+        })
     }
 }

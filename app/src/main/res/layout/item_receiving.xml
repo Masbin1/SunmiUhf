@@ -1,42 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/cardReceiving"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
     card_view:cardCornerRadius="12dp"
-    card_view:cardElevation="6dp">
+    card_view:cardElevation="4dp">
 
     <LinearLayout
-        android:orientation="vertical"
-        android:padding="12dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
 
         <TextView
-            android:id="@+id/textViewName"
-            android:text="DO/IN/0001"
+            android:id="@+id/txtReceivingName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="RN0001"
             android:textStyle="bold"
             android:textSize="16sp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:textColor="@android:color/black" />
 
         <TextView
-            android:id="@+id/textViewPartner"
+            android:id="@+id/txtPartner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:text="Partner Name"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:textSize="14sp"
+            android:textColor="@android:color/darker_gray" />
 
         <TextView
-            android:id="@+id/textViewScheduledDate"
-            android:text="2025-11-06"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
+            android:id="@+id/txtScheduledDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="2025-11-12"
+            android:textSize="14sp"
+            android:textColor="@android:color/darker_gray" />
 
         <TextView
-            android:id="@+id/textViewState"
-            android:text="assigned"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
-
+            android:id="@+id/txtState"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="draft"
+            android:textSize="14sp"
+            android:textColor="@android:color/holo_green_dark" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>
