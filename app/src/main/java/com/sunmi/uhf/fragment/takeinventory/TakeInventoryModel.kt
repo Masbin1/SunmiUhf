@@ -1,7 +1,6 @@
 package com.sunmi.uhf.fragment.takeinventory
 
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.sunmi.uhf.App
 import com.sunmi.uhf.R
@@ -69,27 +68,6 @@ class TakeInventoryModel : BaseViewModel() {
     fun onBtnClick() {
         val flag = start.value ?: false
         start.value = !flag
-    }
-
-    private val _sendDataEvent = MutableLiveData<Unit>()
-    val sendDataEvent: LiveData<Unit> get() = _sendDataEvent
-
-    fun needSendData() {
-        _sendDataEvent.value = Unit
-    }
-
-    private val _sendDataEventPicking = MutableLiveData<Unit>()
-    val sendDataEventPicking: LiveData<Unit> get() = _sendDataEventPicking
-
-    fun sendDataPickingToOdoo(){
-        _sendDataEventPicking.value = Unit
-    }
-
-    private val _sendDataEventDeliver = MutableLiveData<Unit>()
-    val sendDataEventDeliver: LiveData<Unit> get() = _sendDataEventDeliver
-
-    fun sendDataDeliveryToOdoo(){
-        _sendDataEventDeliver.value = Unit
     }
 
     /**

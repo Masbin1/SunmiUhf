@@ -38,9 +38,9 @@ class StockPicking : Fragment() {
 
         recyclerView = view.findViewById(R.id.recyclerViewstockPicking)
         recyclerView.layoutManager = LinearLayoutManager(context)
-        stockPickingAdapter = StockPickingAdapter(stockPickingList) { selectedItem ->
-            openTakeInventoryFragment(listOf(selectedItem))
-        }
+//        stockPickingAdapter = StockPickingAdapter(stockPickingList) { selectedItem ->
+//            openTakeInventoryFragment(listOf(selectedItem))
+//        }
         recyclerView.adapter = stockPickingAdapter
 
         val getMyListTextView: TextView = view.findViewById(R.id.get_my_list_stockPicking)
@@ -49,25 +49,25 @@ class StockPicking : Fragment() {
         }
 
         val scanstockPickingTextView: TextView = view.findViewById(R.id.scan_stockPicking)
-        scanstockPickingTextView.setOnClickListener {
-            if (stockPickingList.isNotEmpty()) {
-                openTakeInventoryFragment(stockPickingList)
-            } else {
-                Toast.makeText(activity, "No stock picking items available", Toast.LENGTH_SHORT).show()
-            }
-        }
+//        scanstockPickingTextView.setOnClickListener {
+//            if (stockPickingList.isNotEmpty()) {
+//                openTakeInventoryFragment(stockPickingList)
+//            } else {
+//                Toast.makeText(activity, "No stock picking items available", Toast.LENGTH_SHORT).show()
+//            }
+//        }
 
         return view
     }
 
     /** Navigasi ke TakeInventoryFragment */
-    private fun openTakeInventoryFragment(stockPickingList: List<StockPickingItem>) {
-        val takeInventoryFragment = TakeInventoryFragment.newInstance(stockPickingList)
-        parentFragmentManager.beginTransaction()
-            .replace(R.id.frameLayoutstockPicking, takeInventoryFragment)
-            .addToBackStack(null)
-            .commit()
-    }
+//    private fun openTakeInventoryFragment(stockPickingList: List<StockPickingItem>) {
+//        val takeInventoryFragment = TakeInventoryFragment.newInstance(stockPickingList)
+//        parentFragmentManager.beginTransaction()
+//            .replace(R.id.frameLayoutstockPicking, takeInventoryFragment)
+//            .addToBackStack(null)
+//            .commit()
+//    }
 
     /** Tampilkan dialog input PIN */
     private fun showPinInputDialog() {

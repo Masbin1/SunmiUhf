@@ -4,12 +4,15 @@ import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.sunmi.uhf.R
 
-class ReceivingMoveAdapter(private var items: List<ReceivingMoveItem>) :
-    RecyclerView.Adapter<ReceivingMoveAdapter.ViewHolder>() {
+class ReceivingMoveAdapter(
+    private var items: List<ReceivingMoveItem>,
+    private val onScanClick: (ReceivingMoveItem) -> Unit
+) : RecyclerView.Adapter<ReceivingMoveAdapter.ViewHolder>() {
 
     @SuppressLint("NotifyDataSetChanged")
     fun updateData(newItems: List<ReceivingMoveItem>) {
@@ -22,6 +25,7 @@ class ReceivingMoveAdapter(private var items: List<ReceivingMoveItem>) :
         val txtLot: TextView = view.findViewById(R.id.txtLot)
         val txtQty: TextView = view.findViewById(R.id.txtQty)
         val txtUom: TextView = view.findViewById(R.id.txtUom)
+        val btnScanRfid: Button = view.findViewById(R.id.btnScanRfid)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -30,7 +34,7 @@ class ReceivingMoveAdapter(private var items: List<ReceivingMoveItem>) :
         return ViewHolder(view)
     }
 
-    override fun getItemCount(): Int = items.size
+    override fun getItemCount() = items.size
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val item = items[position]
@@ -38,5 +42,9 @@ class ReceivingMoveAdapter(private var items: List<ReceivingMoveItem>) :
         holder.txtLot.text = "Lot: ${item.lotName}"
         holder.txtQty.text = "Qty: ${item.quantityDone}/${item.productUomQty}"
         holder.txtUom.text = "UoM: ${item.uomName}"
+
+        holder.btnScanRfid.setOnClickListener {
+            onScanClick(item)
+        }
     }
 }

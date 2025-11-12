@@ -5,5 +5,6 @@ data class ReceivingMoveItem(
     val productUomQty: Double,
     val quantityDone: Double,
     val uomName: String,
-    val lotName: String
+    val lotName: String,
+    val rfid: String
 )

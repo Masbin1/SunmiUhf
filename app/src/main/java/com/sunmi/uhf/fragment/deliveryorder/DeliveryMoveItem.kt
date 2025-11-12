@@ -5,6 +5,7 @@ data class DeliveryMoveItem(
     val productUomQty: Double,
     val quantityDone: Double,
     val uomName: String,
-    val lotName: String
+    val lotName: String,
+    val rfid: String
 )
 

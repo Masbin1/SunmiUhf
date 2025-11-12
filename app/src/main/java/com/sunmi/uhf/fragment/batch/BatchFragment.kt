@@ -34,9 +34,9 @@ class BatchFragment : Fragment() {
 
         recyclerView = view.findViewById(R.id.recyclerViewbatch)
         recyclerView.layoutManager = LinearLayoutManager(context)
-        batchAdapter = BatchAdapter(batchList) { batchItem ->
-            openTakeInventoryFragment(batchItem)
-        }
+//        batchAdapter = BatchAdapter(batchList) { batchItem ->
+//            openTakeInventoryFragment(batchItem)
+//        }
         recyclerView.adapter = batchAdapter
 
         val getMyListTextView: TextView = view.findViewById(R.id.get_my_list_batch)
@@ -45,26 +45,26 @@ class BatchFragment : Fragment() {
         }
 
         val scanBatchTextView: TextView = view.findViewById(R.id.scan_batch)
-        scanBatchTextView.setOnClickListener {
-            if (batchList.isNotEmpty()) {
-                // Pass the first item in the list to the fragment, or modify this as needed
-                openTakeInventoryFragment(batchList[0])
-            } else {
-                Toast.makeText(activity, "No batch items available", Toast.LENGTH_SHORT).show()
-            }
-        }
+//        scanBatchTextView.setOnClickListener {
+//            if (batchList.isNotEmpty()) {
+//                // Pass the first item in the list to the fragment, or modify this as needed
+//                openTakeInventoryFragment(batchList[0])
+//            } else {
+//                Toast.makeText(activity, "No batch items available", Toast.LENGTH_SHORT).show()
+//            }
+//        }
 
         return view
     }
 
 
-    private fun openTakeInventoryFragment(batchItem: BatchItem) {
-        val takeInventoryFragment = TakeInventoryFragment.newInstance(batchItem)
-        parentFragmentManager.beginTransaction()
-            .replace(R.id.frameLayoutbatch, takeInventoryFragment)
-            .addToBackStack(null)
-            .commit()
-    }
+//    private fun openTakeInventoryFragment(batchItem: BatchItem) {
+//        val takeInventoryFragment = TakeInventoryFragment.newInstance()
+//        parentFragmentManager.beginTransaction()
+//            .replace(R.id.frameLayoutbatch, takeInventoryFragment)
+//            .addToBackStack(null)
+//            .commit()
+//    }
 
 
     private fun fetchDataFromApi() {

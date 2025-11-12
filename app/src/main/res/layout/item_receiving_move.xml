@@ -40,4 +40,16 @@
         android:text="UoM: Unit"
         android:textColor="#444444"
         android:layout_marginTop="2dp" />
+
+    <Button
+        android:id="@+id/btnScanRfid"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Scan RFID"
+        android:layout_marginTop="8dp"
+        android:backgroundTint="#216eff"
+        android:textColor="@android:color/white"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="6dp"
+        android:layout_gravity="end"/>
 </LinearLayout>

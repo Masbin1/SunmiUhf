@@ -1,9 +1,5 @@
 package com.sunmi.uhf.fragment.takeinventory
 
-import BatchItem
-//import com.sunmi.uhf.fragment.delivery.DeliveryItemList
-import com.sunmi.uhf.fragment.deliveryorder.DeliveryMoveItem
-import StockPickingItem
 import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -15,17 +11,10 @@ import android.os.Environment
 import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup
-import android.view.LayoutInflater
-import android.widget.Button
 import android.widget.PopupWindow
-import android.widget.TextView
-import android.widget.Toast
-import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.observe
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.sunmi.rfid.RFIDManager
@@ -33,7 +22,6 @@ import com.sunmi.rfid.constant.CMD
 import com.sunmi.rfid.constant.ParamCts
 import com.sunmi.rfid.entity.DataParameter
 import com.sunmi.uhf.App
-import com.sunmi.uhf.MainActivity
 import com.sunmi.uhf.R
 import com.sunmi.uhf.adapter.LabelInfoAdapter
 import com.sunmi.uhf.adapter.TakeModelAdapter
@@ -52,17 +40,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlin.math.min
 
-import okhttp3.*
-import java.io.IOException
-import okhttp3.OkHttpClient
-import okhttp3.FormBody
-import okhttp3.Request
-import okhttp3.Callback
-import okhttp3.Call
-import okhttp3.Response
-import kotlinx.coroutines.*
-
-
 /**
  * @ClassName: TakeInventoryFragment
  * @Description: 盘存 页面
@@ -71,8 +48,6 @@ import kotlinx.coroutines.*
  * @UpdateDate: 20-9-9 下午1:38
  */
 class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
-    private lateinit var model: TakeInventoryModel
-    private var batchItem: BatchItem? = null
     private var dialog: SureBackDialog? = null
     lateinit var vm: TakeInventoryModel
     private var isLoop = false
@@ -90,8 +65,6 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     private var power = 30
     private var rate = -1
     private var autoPower = Config.DEF_TAKE_AUTO_POWER
-    private lateinit var stockPickingList: List<StockPickingItem>
-//    private lateinit var deliveryItemList: List<DeliveryItemList>
     private val br = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
@@ -626,245 +599,6 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         }
     }
 
-    object TemporaryStorage {
-        private val epcList = mutableListOf<String>()
-
-        fun addEpc(epc: String) {
-            if (!epcList.contains(epc)) {
-                epcList.add(epc)
-            }
-        }
-
-        fun getAllEpcs(): List<String> {
-            return epcList.toList()
-        }
-
-        fun clearEpcs() {
-            epcList.clear()
-        }
-
-        fun isEmpty(): Boolean {
-            return epcList.isEmpty()
-        }
-    }
-
-    private fun updateSendDataRepairVisibility(sendDataRepair: TextView) {
-        if (TemporaryStorage.isEmpty() or stockPickingList.isNotEmpty() ) {
-            sendDataRepair.visibility = View.INVISIBLE
-        } else {
-            sendDataRepair.visibility = View.VISIBLE
-        }
-    }
-
-
-    data class RfidStatus(val idLine: Int, val rfid: String, val status: String, val quantity_done: Float)
-
-    private fun sendDataDeliverToOdoo() {
-        val listOfRfidTemporary = TemporaryStorage.getAllEpcs()
-//        val listDeliveryOrder = deliveryItemList
-
-//        val matchedRfidListDelivery = listDeliveryOrder.map { deliveryItemList ->
-//            if (listOfRfidTemporary.contains(deliveryItemList.rfid)) {
-//                RfidStatus(deliveryItemList.idLine, deliveryItemList.rfid, "match", 1.0F)
-//            } else {
-//                RfidStatus(deliveryItemList.idLine, deliveryItemList.rfid, "not_match", 0.0F)
-//            }
-//        }
-//
-//        sendDeliverToServer(matchedRfidListDelivery)
-    }
-
-    private fun sendDataPickingToOdoo() {
-        val listOfRfidTemporary = TemporaryStorage.getAllEpcs()
-        val listStockPicking = stockPickingList
-
-        val matchedRfidList = listStockPicking.map { stockPickingItem ->
-            if (listOfRfidTemporary.contains(stockPickingItem.rfid)) {
-                RfidStatus(stockPickingItem.idLine, stockPickingItem.rfid, "match", 1.0F)
-            } else {
-                RfidStatus(stockPickingItem.idLine, stockPickingItem.rfid, "not_match", 0.0F)
-            }
-        }
-
-        sendToServer(matchedRfidList)
-    }
-
-    private fun sendDeliverToServer(matchedRfidListDelivery: List<RfidStatus>) {
-        val formBuilder = FormBody.Builder()
-        val client = OkHttpClient()
-        val url = "https://infinite-suitable-quetzal.ngrok-free.app/delivery/order"
-
-        matchedRfidListDelivery.forEachIndexed { index, rfidStatus ->
-            formBuilder.add("idLine[$index]", rfidStatus.idLine.toString())
-            formBuilder.add("rfid[$index]", rfidStatus.rfid)
-            formBuilder.add("status[$index]", rfidStatus.status)
-            formBuilder.add("quantity_done[$index]", rfidStatus.quantity_done.toString())
-        }
-
-        val requestBody = formBuilder.build()
-
-        val request = Request.Builder()
-            .url(url)
-            .post(requestBody)
-            .build()
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val response = client.newCall(request).execute()
-                withContext(Dispatchers.Main) {
-                    if (response.isSuccessful) {
-                        val responseBody = response.body?.string()
-                        println("Server response: $responseBody") // Log respons server
-                        handleSuccessResponse(responseBody)
-                        activity?.runOnUiThread {
-                            Toast.makeText(activity, responseBody, Toast.LENGTH_LONG).show()
-                            TemporaryStorage.clearEpcs()
-//                            deliveryItemList = emptyList()
-                            // Navigate to HomeFragment
-                            (activity as? MainActivity)?.let { mainActivity ->
-                                mainActivity.navigateToHomeFragment()
-                            }
-                        }
-
-                    } else {
-                        println("Error response: ${response.code} - ${response.message}") // Log error
-                        handleErrorResponse(response.code)
-                    }
-                }
-            } catch (e: IOException) {
-                withContext(Dispatchers.Main) {
-                    println("Network error: ${e.message}") // Log network error
-                    handleFailure(e)
-                }
-            }
-        }
-    }
-
-
-    private fun sendToServer(matchedRfidList: List<RfidStatus>) {
-        val formBuilder = FormBody.Builder()
-        val client = OkHttpClient()
-        val url = "https://infinite-suitable-quetzal.ngrok-free.app/arrive/product/picking"
-
-        matchedRfidList.forEachIndexed { index, rfidStatus ->
-            formBuilder.add("idLine[$index]", rfidStatus.idLine.toString())
-            formBuilder.add("rfid[$index]", rfidStatus.rfid)
-            formBuilder.add("status[$index]", rfidStatus.status)
-            formBuilder.add("quantity_done[$index]", rfidStatus.quantity_done.toString())
-        }
-
-        val requestBody = formBuilder.build()
-
-        val request = Request.Builder()
-            .url(url)
-            .post(requestBody)
-            .build()
-
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                val response = client.newCall(request).execute()
-                withContext(Dispatchers.Main) {
-                    if (response.isSuccessful) {
-                        val responseBody = response.body?.string()
-                        println("Server response: $responseBody") // Log respons server
-                        handleSuccessResponse(responseBody)
-                        activity?.runOnUiThread {
-                            Toast.makeText(activity, responseBody, Toast.LENGTH_LONG).show()
-                            TemporaryStorage.clearEpcs()
-                            stockPickingList = emptyList()
-                            // Navigate to HomeFragment
-                            (activity as? MainActivity)?.let { mainActivity ->
-                                mainActivity.navigateToHomeFragment()
-                            }
-                        }
-
-                    } else {
-                        println("Error response: ${response.code} - ${response.message}") // Log error
-                        handleErrorResponse(response.code)
-                    }
-                }
-            } catch (e: IOException) {
-                withContext(Dispatchers.Main) {
-                    println("Network error: ${e.message}") // Log network error
-                    handleFailure(e)
-                }
-            }
-        }
-    }
-
-    private fun handleSuccessResponse(responseBody: String?) {
-        println("Data berhasil dikirim: $responseBody")
-        // Tambahkan logika tambahan di sini jika diperlukan
-    }
-
-    private fun handleErrorResponse(code: Int) {
-        println("Gagal mengirim data: $code")
-        // Tambahkan logika penanganan error di sini
-    }
-
-    private fun handleFailure(e: Exception) {
-        println("Request Failed: $e")
-        // Tambahkan logika penanganan kegagalan di sini
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        model.sendDataEvent.observe(viewLifecycleOwner) {
-            sendDataToOdoo()
-        }
-        model.sendDataEventPicking.observe(viewLifecycleOwner){
-            sendDataPickingToOdoo()
-        }
-        model.sendDataEventDeliver.observe(viewLifecycleOwner){
-            sendDataDeliverToOdoo()
-        }
-    }
-
-
-    private fun sendDataToOdoo() {
-        val client = OkHttpClient()
-
-        val formBody = FormBody.Builder()
-            .add("rfid_tags", TemporaryStorage.getAllEpcs().joinToString(","))
-            .add("api_id", "repair_order_drbags")
-            .build()
-
-        val request = Request.Builder()
-            .url("https://infinite-suitable-quetzal.ngrok-free.app/rfid/scan/repairing")
-            .post(formBody)
-            .build()
-
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                // Handle failure
-                e.printStackTrace()
-                // You might want to update UI or log the error here
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                response.use {
-                    if (!response.isSuccessful) {
-                        // Handle unsuccessful response
-                        throw IOException("Unexpected code $response")
-                    }
-
-                    val responseBody = response.body?.string()
-
-                    activity?.runOnUiThread {
-                        Toast.makeText(activity, responseBody, Toast.LENGTH_LONG).show()
-                        TemporaryStorage.clearEpcs()
-
-                        // Navigate to HomeFragment
-                        (activity as? MainActivity)?.let { mainActivity ->
-                            mainActivity.navigateToHomeFragment()
-                        }
-                    }
-                }
-            }
-        })
-    }
-
-
     override fun onCallTag(cmd: Byte, state: Byte, tag: DataParameter?) {
         if (tag == null) return
         playTips()
@@ -875,10 +609,6 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                 allCount++
                 // ANT_ID、TAG_PC、TAG_EPC、TAG_RSSI、TAG_READ_COUNT、TAG_FREQ、TAG_TIME
                 val epc = tag.getString(ParamCts.TAG_EPC) ?: ""
-                TemporaryStorage.addEpc(epc)
-                view?.findViewById<TextView>(R.id.send_data_repair)?.let {
-                    updateSendDataRepairVisibility(it)
-                }
                 val pc = tag.getString(ParamCts.TAG_PC) ?: ""
                 val rssi = "${(Integer.parseInt(tag.getString(ParamCts.TAG_RSSI, "129")) - 129)}"
                 val freq = tag.getString(ParamCts.TAG_FREQ) ?: ""
@@ -896,6 +626,19 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                 }
                 notifyTagDataChange()
             }
+            /*CMD.ISO18000_6B_INVENTORY -> {
+                allCount++
+                val uid = tag.getString(ParamCts.TAG_UID) ?: ""
+                LogUtils.i("darren", "found tag:$uid")
+                val index: Int = tidList.indexOf(uid)
+                if (index != -1) {
+                    tagList[index] = tag
+                } else {
+                    tidList.add(0, uid)
+                    tagList.add(0, tag)
+                }
+                notifyTagDataChange()
+            }*/
             else -> {
                 LogUtils.d("darren", "other found tag.")
             }
@@ -1049,86 +792,22 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        model = ViewModelProvider(this).get(TakeInventoryModel::class.java)
-        arguments?.let {
-            batchItem = it.getParcelable(ARG_PICKUP_ITEM)
-        }
-        arguments?.let {
-            stockPickingList = it.getParcelableArrayList(ARG_STOCK_PICKING_LIST) ?: emptyList()
-        }
-//        arguments?.let {
-//            deliveryItemList = it.getParcelableArrayList(ARG_DELIVERY_ITEM_LIST) ?: emptyList()
-//        }
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        val view = super.onCreateView(inflater, container, savedInstanceState)
-
-        // Helper function to set TextView visibility based on a list's content
-        fun setViewVisibility(view: View, condition: Boolean) {
-            view.visibility = if (condition) View.VISIBLE else View.INVISIBLE
-        }
-
-        // Initialize views
-        val pickupInfoTextView: TextView = view!!.findViewById(R.id.pickupInfoTextView)
-        val cardViewPickupInfo: CardView = view.findViewById(R.id.cardViewPickupInfo)
-        val canStockPickingMatchTextView: TextView = view.findViewById(R.id.can_stock_picking_match)
-        val canDeliveryMatchTextView: TextView = view.findViewById(R.id.checkout_delivery_order)
-        val sendDataRepair: Button = view.findViewById(R.id.send_data_repair)
-
-        // Update pickupInfoTextView and cardViewPickupInfo based on batchItem
-        batchItem?.let { item ->
-            pickupInfoTextView.text = """
-            ID Pickup: ${item.idBatch}
-            Name: ${item.name}
-            Responsible: ${item.responsible}
-        """.trimIndent()
-            cardViewPickupInfo.visibility = View.VISIBLE
-        } ?: run {
-            cardViewPickupInfo.visibility = View.GONE
-        }
-
-        // Update visibility based on stockPickingList and deliveryItemList
-        setViewVisibility(canStockPickingMatchTextView, stockPickingList.isNotEmpty())
-//        setViewVisibility(canDeliveryMatchTextView, deliveryItemList.isNotEmpty())
-        // Update visibility for sendDataRepair based on TemporaryStorage content
-        updateSendDataRepairVisibility(sendDataRepair)
-
-        return view
-    }
-
-
-
     companion object {
-        private const val ARG_PICKUP_ITEM = "pickup_item"
-        fun newInstance(batchItem: BatchItem?) = TakeInventoryFragment().apply {
-            arguments = Bundle().apply {
-                putParcelable(ARG_PICKUP_ITEM, batchItem)
+        private const val ARG_PRODUCT_NAME = "arg_product_name"
+        private const val ARG_LOT_NAME = "arg_lot_name"
+        private const val ARG_RFID = "arg_rfid"
+
+        fun newInstance(productName: String?, lotName: String?, rfid: String?): TakeInventoryFragment {
+            val args = Bundle().apply {
+                putString(ARG_PRODUCT_NAME, productName)
+                putString(ARG_LOT_NAME, lotName)
+                putString(ARG_RFID, rfid)
             }
-        }
-        private const val ARG_STOCK_PICKING_LIST = "stock_picking_list"
-        fun newInstance(stockPickingList: List<StockPickingItem>): TakeInventoryFragment {
-            val fragment = TakeInventoryFragment()
-            val args = Bundle()
-            args.putParcelableArrayList(ARG_STOCK_PICKING_LIST, ArrayList(stockPickingList))
-            fragment.arguments = args
-            return fragment
+            return newInstance(args)
         }
 
-        private const val ARG_DELIVERY_ITEM_LIST = "delivery_item_list"
-
-//        fun newInstanceFromDelivery(deliveryItemOrderList: List<DeliveryItemList>): TakeInventoryFragment {
-//            val fragment = TakeInventoryFragment()
-//            val args = Bundle()
-//            args.putParcelableArrayList(ARG_DELIVERY_ITEM_LIST, ArrayList(deliveryItemOrderList))
-//            fragment.arguments = args
-//            return fragment
-//        }
+        fun newInstance(args: Bundle?) = TakeInventoryFragment()
+            .apply { arguments = args }
 
         const val REQUEST_PERMISSION_ID = 101
     }

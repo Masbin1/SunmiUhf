@@ -96,7 +96,8 @@ class DeliveryDetailFragment : Fragment() {
                             productUomQty = line.getDouble("product_uom_qty"),
                             quantityDone = line.getDouble("quantity_done"),
                             uomName = line.getString("uom_name"),
-                            lotName = line.getString("lot_name")
+                            lotName = line.getString("lot_name"),
+                            rfid = line.getString("lot_name"),
                         )
                     )
                 }
