@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.sunmi.uhf.BuildConfig
 import com.sunmi.uhf.R
+import com.sunmi.uhf.base.BaseActivity
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
@@ -36,10 +37,11 @@ class DeliveryFragment : Fragment() {
 
         adapter = DeliveryAdapter(emptyList()) { item ->
             val fragment = DeliveryDetailFragment.newInstance(item.id)
-            parentFragmentManager.beginTransaction()
-                .replace(R.id.frameLayoutDelivery, fragment)
-                .addToBackStack(null)
-                .commit()
+            (activity as? BaseActivity<*>)?.switchFragment(
+                fragment,
+                addToBackStack = true,
+                clearStack = false
+            )
         }
 
         recyclerView.layoutManager = LinearLayoutManager(requireContext())

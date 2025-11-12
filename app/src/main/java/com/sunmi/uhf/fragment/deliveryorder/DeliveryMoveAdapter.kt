@@ -7,14 +7,19 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.sunmi.uhf.R
 
-class DeliveryMoveAdapter(
-    private var moveList: List<DeliveryMoveItem>
-) : RecyclerView.Adapter<DeliveryMoveAdapter.ViewHolder>() {
+class DeliveryMoveAdapter(private var items: List<DeliveryMoveItem>) :
+    RecyclerView.Adapter<DeliveryMoveAdapter.ViewHolder>() {
+
+    fun updateData(newItems: List<DeliveryMoveItem>) {
+        items = newItems
+        notifyDataSetChanged()
+    }
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
-        val product: TextView = view.findViewById(R.id.txtProductName)
-        val demandQty: TextView = view.findViewById(R.id.txtDemandQty)
-        val doneQty: TextView = view.findViewById(R.id.txtDoneQty)
+        val txtProduct: TextView = view.findViewById(R.id.txtProduct)
+        val txtLot: TextView = view.findViewById(R.id.txtLot)
+        val txtQty: TextView = view.findViewById(R.id.txtQty)
+        val txtUom: TextView = view.findViewById(R.id.txtUom)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -23,17 +28,13 @@ class DeliveryMoveAdapter(
         return ViewHolder(view)
     }
 
-    override fun getItemCount(): Int = moveList.size
+    override fun getItemCount(): Int = items.size
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val item = moveList[position]
-        holder.product.text = item.productName
-        holder.demandQty.text = "Demand: ${item.demandQty}"
-        holder.doneQty.text = "Done: ${item.doneQty}"
-    }
-
-    fun updateData(newList: List<DeliveryMoveItem>) {
-        moveList = newList
-        notifyDataSetChanged()
+        val item = items[position]
+        holder.txtProduct.text = item.productName
+        holder.txtLot.text = "Lot: ${item.lotName}"
+        holder.txtQty.text = "Qty: ${item.quantityDone}/${item.productUomQty}"
+        holder.txtUom.text = "UoM: ${item.uomName}"
     }
 }

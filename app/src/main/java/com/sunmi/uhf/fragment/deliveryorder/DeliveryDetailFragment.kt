@@ -1,5 +1,6 @@
 package com.sunmi.uhf.fragment.deliveryorder
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -23,6 +24,9 @@ class DeliveryDetailFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var txtDeliveryName: TextView
     private lateinit var txtPartner: TextView
+    private lateinit var txtScheduledDate: TextView
+    private lateinit var txtOrigin: TextView
+    private lateinit var txtState: TextView
 
     companion object {
         fun newInstance(id: Int): DeliveryDetailFragment {
@@ -47,6 +51,9 @@ class DeliveryDetailFragment : Fragment() {
 
         txtDeliveryName = view.findViewById(R.id.txtDeliveryName)
         txtPartner = view.findViewById(R.id.txtPartner)
+        txtScheduledDate = view.findViewById(R.id.txtScheduledDate)
+        txtOrigin = view.findViewById(R.id.txtOrigin)
+        txtState = view.findViewById(R.id.txtState)
         recyclerView = view.findViewById(R.id.recyclerViewDeliveryMove)
         progressBar = view.findViewById(R.id.progressBarDeliveryDetail)
 
@@ -67,30 +74,39 @@ class DeliveryDetailFragment : Fragment() {
 
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
-                progressBar.visibility = View.GONE
+                requireActivity().runOnUiThread {
+                    progressBar.visibility = View.GONE
+                }
             }
 
+            @SuppressLint("SetTextI18n")
             override fun onResponse(call: Call, response: Response) {
                 val jsonData = response.body?.string() ?: return
                 val jsonObj = JSONObject(jsonData)
+                val pickingObj = jsonObj.getJSONObject("picking")
 
-                val moveLines = jsonObj.getJSONArray("move_lines")
+                val moveLines = pickingObj.getJSONArray("move_lines")
                 val list = mutableListOf<DeliveryMoveItem>()
 
                 for (i in 0 until moveLines.length()) {
                     val line = moveLines.getJSONObject(i)
                     list.add(
                         DeliveryMoveItem(
-                            line.getString("product_name"),
-                            line.getDouble("demand_qty"),
-                            line.getDouble("done_qty")
+                            productName = line.getString("product_name"),
+                            productUomQty = line.getDouble("product_uom_qty"),
+                            quantityDone = line.getDouble("quantity_done"),
+                            uomName = line.getString("uom_name"),
+                            lotName = line.getString("lot_name")
                         )
                     )
                 }
 
                 requireActivity().runOnUiThread {
-                    txtDeliveryName.text = jsonObj.getString("name")
-                    txtPartner.text = jsonObj.getString("partner_name")
+                    txtDeliveryName.text = "Delivery Number: ${pickingObj.getString("name")}"
+                    txtPartner.text = "Customer: ${pickingObj.getString("partner_name")}"
+                    txtScheduledDate.text = "Scheduled Date: ${pickingObj.getString("scheduled_date")}"
+                    txtOrigin.text = "Origin: ${pickingObj.optString("origin", "-")}"
+                    txtState.text = "State: ${pickingObj.getString("state")}"
                     adapter.updateData(list)
                     progressBar.visibility = View.GONE
                 }
