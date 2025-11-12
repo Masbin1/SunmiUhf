@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -11,9 +12,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.sunmi.uhf.BuildConfig
 import com.sunmi.uhf.R
-import com.sunmi.uhf.fragment.receivingnotes.ReceivingFragment
 import okhttp3.*
-import org.json.JSONArray
+import org.json.JSONObject
 import java.io.IOException
 
 class DeliveryFragment : Fragment() {
@@ -21,14 +21,18 @@ class DeliveryFragment : Fragment() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
     private lateinit var adapter: DeliveryAdapter
+    private lateinit var contentLayout: LinearLayout
+
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val view = inflater.inflate(R.layout.fragment_delivery, container, false)
+        val view = inflater.inflate(R.layout.fragment_delivery_order, container, false)
         recyclerView = view.findViewById(R.id.recyclerViewDelivery)
         progressBar = view.findViewById(R.id.progressBarDelivery)
+        contentLayout = view.findViewById(R.id.contentLayoutDelivery)
+
 
         adapter = DeliveryAdapter(emptyList()) { item ->
             val fragment = DeliveryDetailFragment.newInstance(item.id)
@@ -47,7 +51,10 @@ class DeliveryFragment : Fragment() {
 
     private fun loadDeliveryOrders() {
         progressBar.visibility = View.VISIBLE
-        val client = OkHttpClient()
+        val client = OkHttpClient.Builder()
+            .retryOnConnectionFailure(true)
+            .build()
+
         val request = Request.Builder()
             .url("${BuildConfig.SERVER_URL}/get/stock/picking/delivery")
             .build()
@@ -56,36 +63,52 @@ class DeliveryFragment : Fragment() {
             override fun onFailure(call: Call, e: IOException) {
                 requireActivity().runOnUiThread {
                     progressBar.visibility = View.GONE
-                    Toast.makeText(requireContext(), "Failed to load data", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Failed to load data: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
 
             override fun onResponse(call: Call, response: Response) {
                 val jsonData = response.body?.string() ?: return
-                val jsonArray = JSONArray(jsonData)
-                val deliveryList = mutableListOf<DeliveryItem>()
 
-                for (i in 0 until jsonArray.length()) {
-                    val obj = jsonArray.getJSONObject(i)
-                    deliveryList.add(
-                        DeliveryItem(
-                            obj.getInt("id"),
-                            obj.getString("name"),
-                            obj.getString("scheduled_date"),
-                            obj.getString("partner_name"),
-                            obj.getString("state")
-                        )
-                    )
-                }
+                try {
+                    val jsonObject = JSONObject(jsonData)
+                    if (jsonObject.getString("status") == "success") {
+                        val jsonArray = jsonObject.getJSONArray("pickings")
+                        val deliveryList = mutableListOf<DeliveryItem>()
 
-                requireActivity().runOnUiThread {
-                    progressBar.visibility = View.GONE
-                    adapter.updateData(deliveryList)
+                        for (i in 0 until jsonArray.length()) {
+                            val obj = jsonArray.getJSONObject(i)
+                            deliveryList.add(
+                                DeliveryItem(
+                                    id = obj.getInt("id"),
+                                    name = obj.getString("name"),
+                                    scheduledDate = obj.getString("scheduled_date"),
+                                    partnerName = obj.optString("partner_name", "-"),
+                                    state = obj.getString("state")
+                                )
+                            )
+                        }
+
+                        requireActivity().runOnUiThread {
+                            progressBar.visibility = View.GONE
+                            contentLayout.visibility = View.VISIBLE
+                            adapter.updateData(deliveryList)
+                        }
+                    } else {
+                        requireActivity().runOnUiThread {
+                            progressBar.visibility = View.GONE
+                            Toast.makeText(requireContext(), "Failed: ${jsonObject.optString("message")}", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } catch (e: Exception) {
+                    requireActivity().runOnUiThread {
+                        progressBar.visibility = View.GONE
+                        Toast.makeText(requireContext(), "Error parsing JSON: ${e.message}", Toast.LENGTH_LONG).show()
+                    }
                 }
             }
         })
     }
-
 
     companion object {
         fun newInstance(nothing: Nothing?) = DeliveryFragment()

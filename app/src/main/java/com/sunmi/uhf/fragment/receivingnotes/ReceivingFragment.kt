@@ -1,5 +1,6 @@
 package com.sunmi.uhf.fragment.receivingnotes
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -95,6 +96,7 @@ class ReceivingFragment : Fragment() {
     }
 
 
+    @SuppressLint("NotifyDataSetChanged")
     private fun addDataToList(jsonObject: JSONObject) {
         val pickingsArray: JSONArray = jsonObject.getJSONArray("pickings")
         receivingList.clear()
