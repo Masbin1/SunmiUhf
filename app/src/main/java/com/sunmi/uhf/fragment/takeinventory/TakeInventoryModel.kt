@@ -54,6 +54,12 @@ class TakeInventoryModel : BaseViewModel() {
 
     //标签信息是否显示
     val labelVisibility = MutableLiveData<Boolean>(false)
+    val receivingVisible = MutableLiveData<Boolean>(false)
+    val receivingProduct = MutableLiveData<String>()
+    val receivingLot = MutableLiveData<String>()
+    val receivingQty = MutableLiveData<String>()
+    val receivingUom = MutableLiveData<String>()
+    val receivingRfid = MutableLiveData<String>()
 
     /**
      * 返回点击事件
@@ -125,6 +131,10 @@ class TakeInventoryModel : BaseViewModel() {
      */
     fun onShareClick() {
         EventConstant.EVENT_INVENTORY_SHARE.publish()
+    }
+
+    fun onProcessClick() {
+        EventConstant.EVENT_RECEIVING_PROCESS.publish()
     }
 
     /**

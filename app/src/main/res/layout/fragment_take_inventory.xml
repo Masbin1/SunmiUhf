@@ -4,6 +4,8 @@
 
     <data>
 
+        <import type="android.view.View" />
+
         <variable
             name="vm"
             type="com.sunmi.uhf.fragment.takeinventory.TakeInventoryModel" />
@@ -45,6 +47,66 @@
             app:layout_constraintTop_toBottomOf="@id/title_line"
             app:vm="@{vm}" />
 
+        <LinearLayout
+            android:id="@+id/receiving_info_container"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:background="@color/white"
+            android:orientation="vertical"
+            android:paddingLeft="@dimen/sunmi_28px"
+            android:paddingTop="@dimen/sunmi_20px"
+            android:paddingRight="@dimen/sunmi_28px"
+            android:paddingBottom="@dimen/sunmi_20px"
+            android:visibility="@{vm.receivingVisible?View.VISIBLE:View.GONE}"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/basic_ll">
+
+            <TextView
+                android:id="@+id/receiving_product_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@{vm.receivingProduct}"
+                android:textColor="@color/majorTextColor"
+                android:textSize="@dimen/sunmi_32ps" />
+
+            <TextView
+                android:id="@+id/receiving_lot_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/sunmi_12px"
+                android:text="@{vm.receivingLot}"
+                android:textColor="@color/primaryTextColor"
+                android:textSize="@dimen/sunmi_28ps" />
+
+            <TextView
+                android:id="@+id/receiving_qty_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/sunmi_8px"
+                android:text="@{vm.receivingQty}"
+                android:textColor="@color/primaryTextColor"
+                android:textSize="@dimen/sunmi_28ps" />
+
+            <TextView
+                android:id="@+id/receiving_uom_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/sunmi_8px"
+                android:text="@{vm.receivingUom}"
+                android:textColor="@color/primaryTextColor"
+                android:textSize="@dimen/sunmi_28ps" />
+
+            <TextView
+                android:id="@+id/receiving_rfid_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/sunmi_8px"
+                android:text="@{vm.receivingRfid}"
+                android:textColor="@color/primaryTextColor"
+                android:textSize="@dimen/sunmi_28ps" />
+        </LinearLayout>
+
         <include
             android:id="@+id/filter_ll"
             layout="@layout/layout_take_inventory_filter"
@@ -53,7 +115,7 @@
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/basic_ll"
+            app:layout_constraintTop_toBottomOf="@id/receiving_info_container"
             app:vm="@{vm}" />
 
         <include

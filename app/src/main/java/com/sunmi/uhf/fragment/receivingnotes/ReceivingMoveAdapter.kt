@@ -10,7 +10,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.sunmi.uhf.R
 
 class ReceivingMoveAdapter(
-    private var items: List<ReceivingMoveItem>
+    private var items: List<ReceivingMoveItem>,
+    private val onScanClick: (ReceivingMoveItem) -> Unit
 ) : RecyclerView.Adapter<ReceivingMoveAdapter.ViewHolder>() {
 
     @SuppressLint("NotifyDataSetChanged")
@@ -24,6 +25,7 @@ class ReceivingMoveAdapter(
         val txtLot: TextView = view.findViewById(R.id.txtLot)
         val txtQty: TextView = view.findViewById(R.id.txtQty)
         val txtUom: TextView = view.findViewById(R.id.txtUom)
+        val txtRfid: TextView = view.findViewById(R.id.txtRfid)
         val btnScanRfid: Button = view.findViewById(R.id.btnScanRfid)
     }
 
@@ -41,11 +43,10 @@ class ReceivingMoveAdapter(
         holder.txtLot.text = "Lot: ${item.lotName}"
         holder.txtQty.text = "Qty: ${item.quantityDone}/${item.productUomQty}"
         holder.txtUom.text = "UoM: ${item.uomName}"
+        holder.txtRfid.text = if (item.rfid.isEmpty()) "RFID: -" else "RFID: ${item.rfid}"
 
         holder.btnScanRfid.setOnClickListener {
             onScanClick(item)
         }
     }
 }
-
-private fun ReceivingMoveAdapter.onScanClick(item: ReceivingMoveItem) {}

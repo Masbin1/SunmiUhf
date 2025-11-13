@@ -41,6 +41,14 @@
         android:textColor="#444444"
         android:layout_marginTop="2dp" />
 
+    <TextView
+        android:id="@+id/txtRfid"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="RFID: -"
+        android:textColor="#444444"
+        android:layout_marginTop="2dp" />
+
     <Button
         android:id="@+id/btnScanRfid"
         android:layout_width="wrap_content"

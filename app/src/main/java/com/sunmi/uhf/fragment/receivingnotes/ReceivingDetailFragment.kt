@@ -9,6 +9,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.sunmi.uhf.BuildConfig
 import com.sunmi.uhf.R
+import com.sunmi.uhf.base.BaseActivity
+import com.sunmi.uhf.fragment.takeinventory.TakeInventoryFragment
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
@@ -52,7 +54,20 @@ class ReceivingDetailFragment : Fragment() {
         recyclerView = view.findViewById(R.id.recyclerViewReceiving)
         progressBar = view.findViewById(R.id.progressBarReceivingDetail)
 
-        adapter = ReceivingMoveAdapter(emptyList())
+        adapter = ReceivingMoveAdapter(emptyList()) { item ->
+            val args = Bundle().apply {
+                putSerializable(TakeInventoryFragment.ARG_KEY_RECEIVING_ITEM, item)
+            }
+            val fragment = TakeInventoryFragment.newInstance(args)
+            fragment.setReceivingScanResultListener { moveId, rfid ->
+                handleReceivingScanResult(moveId, rfid)
+            }
+            (activity as? BaseActivity<*>)?.switchFragment(
+                fragment,
+                addToBackStack = true,
+                clearStack = false
+            )
+        }
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
 
@@ -60,8 +75,16 @@ class ReceivingDetailFragment : Fragment() {
         return view
     }
 
-
-
+    private fun handleReceivingScanResult(moveId: Int, rfid: String) {
+        if (moveId == -1 || rfid.isEmpty()) {
+            return
+        }
+        val index = moveLines.indexOfFirst { it.moveId == moveId }
+        if (index != -1) {
+            moveLines[index] = moveLines[index].copy(rfid = rfid)
+            adapter.updateData(moveLines)
+        }
+    }
 
     private fun loadReceivingDetail() {
         progressBar.visibility = View.VISIBLE
@@ -91,6 +114,7 @@ class ReceivingDetailFragment : Fragment() {
                     val line = moveLinesArray.getJSONObject(i)
                     list.add(
                         ReceivingMoveItem(
+                            moveId = line.getInt("id"),
                             productName = line.getString("product_name"),
                             productUomQty = line.getDouble("product_uom_qty"),
                             quantityDone = line.getDouble("quantity_done"),

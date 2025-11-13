@@ -14,7 +14,7 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@{vm.editModel?@color/white:@color/colorAccent}">
+        android:background="@{vm.editModel &amp;&amp; !vm.receivingVisible?@color/white:@color/colorAccent}">
 
         <View
             android:id="@+id/top_line"
@@ -44,7 +44,7 @@
             android:text="@{vm.start?@string/stop_take_inventory_text:@string/start_take_inventory_text}"
             android:textColor="@color/white"
             android:textSize="@dimen/sunmi_32ps"
-            android:visibility="@{vm.editModel?View.GONE:View.VISIBLE}"
+            android:visibility="@{vm.receivingVisible?View.VISIBLE:(vm.editModel?View.GONE:View.VISIBLE)}"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
@@ -118,6 +118,27 @@
             android:visibility="@{vm.editModel?View.VISIBLE:View.GONE}"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toRightOf="@id/share_tv"
+            app:layout_constraintRight_toLeftOf="@id/process_btn"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <Button
+            android:id="@+id/process_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="@dimen/sunmi_30px"
+            android:alpha="@{vm.editEnExport?1.0f:0.4f}"
+            android:background="@drawable/btn_stoke_shape"
+            android:enabled="@{vm.editEnExport}"
+            android:onClick="@{()->vm.onProcessClick()}"
+            android:paddingLeft="@dimen/sunmi_30px"
+            android:paddingTop="@dimen/sunmi_16px"
+            android:paddingRight="@dimen/sunmi_30px"
+            android:paddingBottom="@dimen/sunmi_16px"
+            android:text="@string/process_text"
+            android:textColor="@color/majorTextColor"
+            android:textSize="@dimen/sunmi_24ps"
+            android:visibility="@{vm.editModel?View.VISIBLE:View.GONE}"
+            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 

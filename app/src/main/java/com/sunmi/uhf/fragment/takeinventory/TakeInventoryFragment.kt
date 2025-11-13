@@ -33,6 +33,7 @@ import com.sunmi.uhf.databinding.FragmentTakeInventoryBinding
 import com.sunmi.uhf.dialog.SureBackDialog
 import com.sunmi.uhf.event.SimpleViewEvent
 import com.sunmi.uhf.fragment.ReadBaseFragment
+import com.sunmi.uhf.fragment.receivingnotes.ReceivingMoveItem
 import com.sunmi.uhf.utils.*
 import com.sunmi.uhf.view.RecycleDivider
 import com.sunmi.widget.dialog.InputDialog
@@ -50,6 +51,8 @@ import kotlin.math.min
 class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     private var dialog: SureBackDialog? = null
     lateinit var vm: TakeInventoryModel
+    private var receivingItem: ReceivingMoveItem? = null
+    private var receivingScanResultListener: ((Int, String) -> Unit)? = null
     private var isLoop = false
     private var allCount = 0
     private val list = mutableListOf<LabelInfoBean>()
@@ -90,6 +93,11 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
 
     override fun getLayoutResource() = R.layout.fragment_take_inventory
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        receivingItem = arguments?.getSerializable(ARG_KEY_RECEIVING_ITEM) as? ReceivingMoveItem
+    }
+
     override fun initVM() {
         vm = getViewModel(TakeInventoryModel::class.java)
         binding.vm = vm
@@ -111,6 +119,17 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
 
     override fun initData() {
         super.initData()
+        receivingItem?.let {
+            vm.receivingVisible.value = true
+            vm.receivingProduct.value = it.productName
+            vm.receivingLot.value = "Lot: ${if (it.lotName.isEmpty()) "-" else it.lotName}"
+            vm.receivingQty.value = "Qty: ${it.quantityDone}/${it.productUomQty}"
+            vm.receivingUom.value = "UoM: ${it.uomName}"
+            vm.receivingRfid.value = if (it.rfid.isEmpty()) "RFID: -" else "RFID: ${it.rfid}"
+            vm.editModel.value = true
+        } ?: run {
+            vm.receivingVisible.value = false
+        }
         adapter.setNewInstance(list)
         vm.topSearchEn.value = !list.isNullOrEmpty()
         vm.start.observe(viewLifecycleOwner, Observer { startStop(it) })
@@ -225,14 +244,41 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                 }
                 exportExcel()
             }
+            EventConstant.EVENT_RECEIVING_PROCESS -> {
+                processReceivingSelection()
+            }
             EventConstant.EVENT_TAKE_LABEL_INFO -> {
 
             }
         }
     }
 
+    fun setReceivingScanResultListener(listener: (Int, String) -> Unit) {
+        receivingScanResultListener = listener
+    }
+
     fun handleBottomStatus() {
         vm.editEnExport.postValue(adapter.selectData.size > 0)
+    }
+
+    private fun processReceivingSelection() {
+        val item = receivingItem ?: return
+        if (adapter.selectData.size == 0) {
+            mainScope.launch { showShort(getString(R.string.please_take_select_before_proceeding)) }
+            return
+        }
+        if (adapter.selectData.size > 1) {
+            mainScope.launch { showShort(getString(R.string.please_select_single_tag)) }
+            return
+        }
+        val rfidValue = adapter.selectData.values.firstOrNull()?.epc.orEmpty()
+        if (rfidValue.isEmpty()) {
+            mainScope.launch { showShort(getString(R.string.hint_unknow_error)) }
+            return
+        }
+        vm.receivingRfid.value = "RFID: $rfidValue"
+        receivingScanResultListener?.invoke(item.moveId, rfidValue)
+        performBackClick()
     }
 
     /**
@@ -452,6 +498,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         dialog?.dismiss()
         takeModelPw?.dismiss()
         unregisterBr()
+        receivingScanResultListener = null
     }
 
 
@@ -796,6 +843,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         fun newInstance(args: Bundle?) = TakeInventoryFragment()
             .apply { arguments = args }
 
+        const val ARG_KEY_RECEIVING_ITEM = "arg_receiving_item"
         const val REQUEST_PERMISSION_ID = 101
     }
 }
