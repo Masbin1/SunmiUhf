@@ -55,7 +55,7 @@
         android:layout_height="wrap_content"
         android:text="Scan RFID"
         android:layout_marginTop="8dp"
-        android:backgroundTint="#216eff"
+        android:backgroundTint="@color/blue_primary"
         android:textColor="@android:color/white"
         android:paddingHorizontal="12dp"
         android:paddingVertical="6dp"

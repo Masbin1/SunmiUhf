@@ -31,9 +31,11 @@
 
     <color name="color_1A000000">#1A000000</color>
 
+
     <color name="color_FF858A95">#FF858A95</color>
     <color name="color_FFFFEADD">#FFEADD</color>
     <color name="signalIndicatorColor">#FF858A95</color>
     <color name="colorAccent60">#99FF6000</color>
     <color name="colorAccent20">#33FF6000</color>
+    <color name="blue_primary">#216eff</color>
 </resources>

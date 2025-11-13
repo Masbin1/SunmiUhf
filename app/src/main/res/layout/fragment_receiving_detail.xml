@@ -93,4 +93,17 @@
                 android:nestedScrollingEnabled="false" />
         </LinearLayout>
     </ScrollView>
+
+    <!-- Floating Save Button -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/btnSaveReceiving"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="24dp"
+        android:backgroundTint="@color/blue_primary"
+        android:src="@android:drawable/ic_menu_save"
+        android:contentDescription="Save"
+        android:elevation="8dp" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
