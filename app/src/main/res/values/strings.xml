@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name">UHF Drbags Ambassador</string>
     <string name="home_title_text">Home</string>
     <string name="home_power_text">Handle Battery</string>
@@ -27,7 +27,7 @@
     <string name="copy_text">Copy EPC</string>
     <string name="share_text">Share</string>
     <string name="import_excel_text">Export Excel</string>
-    <string name="process_text">Process</string>
+    <string name="process_text" tools:ignore="MissingTranslation">Process</string>
     <string name="label_num_text">Tag Count</string>
     <string name="label_info_text">Tag Info</string>
     <string name="id_text">ID</string>

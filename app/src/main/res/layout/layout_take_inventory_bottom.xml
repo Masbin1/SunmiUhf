@@ -21,7 +21,7 @@
             android:layout_width="0dp"
             android:layout_height="@dimen/sunmi_1px"
             android:background="#1A000000"
-            android:visibility="@{vm.editModel?View.GONE:View.VISIBLE}"
+            android:visibility="@{vm.receivingVisible?View.GONE:(vm.editModel?View.GONE:View.VISIBLE)}"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -31,12 +31,13 @@
             android:layout_width="0dp"
             android:layout_height="@dimen/sunmi_1px"
             android:background="#1A000000"
-            android:visibility="@{vm.editModel?View.GONE:View.VISIBLE}"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:visibility="@{vm.receivingVisible?View.GONE:(vm.editModel?View.GONE:View.VISIBLE)}"
+            app:layout_constraintBottom_toTopOf="@id/process_container"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent" />
 
         <TextView
+            android:id="@+id/start_btn"
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:gravity="center"
@@ -45,6 +46,7 @@
             android:textColor="@color/white"
             android:textSize="@dimen/sunmi_32ps"
             android:visibility="@{vm.receivingVisible?View.VISIBLE:(vm.editModel?View.GONE:View.VISIBLE)}"
+            app:layout_constraintBottom_toTopOf="@id/process_container"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
@@ -67,8 +69,8 @@
             android:text="@string/copy_text"
             android:textColor="@color/majorTextColor"
             android:textSize="@dimen/sunmi_24ps"
-            android:visibility="@{vm.editModel?View.VISIBLE:View.GONE}"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:visibility="@{vm.receivingVisible?View.GONE:(vm.editModel?View.VISIBLE:View.GONE)}"
+            app:layout_constraintBottom_toTopOf="@id/process_container"
             app:layout_constraintHorizontal_chainStyle="packed"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toLeftOf="@id/share_tv"
@@ -93,8 +95,8 @@
             android:text="@string/share_text"
             android:textColor="@color/majorTextColor"
             android:textSize="@dimen/sunmi_24ps"
-            android:visibility="@{vm.editModel?View.VISIBLE:View.GONE}"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:visibility="@{vm.receivingVisible?View.GONE:(vm.editModel?View.VISIBLE:View.GONE)}"
+            app:layout_constraintBottom_toTopOf="@id/process_container"
             app:layout_constraintLeft_toRightOf="@id/copy_tv"
             app:layout_constraintRight_toLeftOf="@id/excel_tv"
             app:layout_constraintTop_toTopOf="parent" />
@@ -115,32 +117,42 @@
             android:text="@string/import_excel_text"
             android:textColor="@color/majorTextColor"
             android:textSize="@dimen/sunmi_24ps"
-            android:visibility="@{vm.editModel?View.VISIBLE:View.GONE}"
-            app:layout_constraintBottom_toBottomOf="parent"
+            android:visibility="@{vm.receivingVisible?View.GONE:(vm.editModel?View.VISIBLE:View.GONE)}"
+            app:layout_constraintBottom_toTopOf="@id/process_container"
             app:layout_constraintLeft_toRightOf="@id/share_tv"
-            app:layout_constraintRight_toLeftOf="@id/process_btn"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <Button
-            android:id="@+id/process_btn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginRight="@dimen/sunmi_30px"
-            android:alpha="@{vm.editEnExport?1.0f:0.4f}"
-            android:background="@drawable/btn_stoke_shape"
-            android:enabled="@{vm.editEnExport}"
-            android:onClick="@{()->vm.onProcessClick()}"
-            android:paddingLeft="@dimen/sunmi_30px"
-            android:paddingTop="@dimen/sunmi_16px"
-            android:paddingRight="@dimen/sunmi_30px"
-            android:paddingBottom="@dimen/sunmi_16px"
-            android:text="@string/process_text"
-            android:textColor="@color/majorTextColor"
-            android:textSize="@dimen/sunmi_24ps"
-            android:visibility="@{vm.editModel?View.VISIBLE:View.GONE}"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/process_container"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:background="#2196F3"
+            android:clickable="@{vm.editEnExport}"
+            android:enabled="@{vm.editEnExport}"
+            android:focusable="true"
+            android:alpha="@{vm.editEnExport ? 1.0f : 0.4f}"
+            android:onClick="@{()->vm.onProcessClick()}"
+            android:visibility="@{vm.receivingVisible &amp;&amp; vm.editEnExport ? View.VISIBLE : View.GONE}"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/start_btn">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/process_text"
+                android:textColor="@color/colorPrimary"
+                android:textSize="@dimen/sunmi_32ps"
+                app:layout_constraintTop_toTopOf="parent"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintHorizontal_bias="0.5"
+                app:layout_constraintVertical_bias="0.5"/>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

@@ -278,6 +278,12 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         }
         vm.receivingRfid.value = "RFID: $rfidValue"
         receivingScanResultListener?.invoke(item.moveId, rfidValue)
+        receivingItem = receivingItem?.copy(rfid = rfidValue)
+        adapter.selectData.clear()
+        adapter.selectAll = false
+        adapter.notifyDataSetChanged()
+        vm.editEnExport.postValue(false)
+        vm.selectAll.postValue(false)
         performBackClick()
     }
 
