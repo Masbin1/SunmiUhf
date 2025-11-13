@@ -43,7 +43,12 @@ class ReceivingMoveAdapter(
         holder.txtLot.text = "Lot: ${item.lotName}"
         holder.txtQty.text = "Qty: ${item.quantityDone}/${item.productUomQty}"
         holder.txtUom.text = "UoM: ${item.uomName}"
-        holder.txtRfid.text = if (item.rfid.isEmpty()) "RFID: -" else "RFID: ${item.rfid}"
+        val displayRfid = when {
+            !item.pendingRfid.isNullOrEmpty() -> item.pendingRfid
+            item.rfid.isNotEmpty() -> item.rfid
+            else -> null
+        }
+        holder.txtRfid.text = displayRfid?.let { "RFID: $it" } ?: "RFID: -"
 
         holder.btnScanRfid.setOnClickListener {
             onScanClick(item)

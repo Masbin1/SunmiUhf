@@ -125,7 +125,12 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
             vm.receivingLot.value = "Lot: ${if (it.lotName.isEmpty()) "-" else it.lotName}"
             vm.receivingQty.value = "Qty: ${it.quantityDone}/${it.productUomQty}"
             vm.receivingUom.value = "UoM: ${it.uomName}"
-            vm.receivingRfid.value = if (it.rfid.isEmpty()) "RFID: -" else "RFID: ${it.rfid}"
+            val currentRfid = when {
+                !it.pendingRfid.isNullOrEmpty() -> it.pendingRfid
+                it.rfid.isNotEmpty() -> it.rfid
+                else -> null
+            }
+            vm.receivingRfid.value = currentRfid?.let { value -> "RFID: $value" } ?: "RFID: -"
             vm.editModel.value = true
         } ?: run {
             vm.receivingVisible.value = false
@@ -278,7 +283,10 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         }
         vm.receivingRfid.value = "RFID: $rfidValue"
         receivingScanResultListener?.invoke(item.moveId, rfidValue)
-        receivingItem = receivingItem?.copy(rfid = rfidValue)
+        receivingItem = receivingItem?.let { current ->
+            val pendingValue = if (rfidValue == current.rfid) null else rfidValue
+            current.copy(pendingRfid = pendingValue)
+        }
         adapter.selectData.clear()
         adapter.selectAll = false
         adapter.notifyDataSetChanged()

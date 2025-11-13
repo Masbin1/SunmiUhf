@@ -9,5 +9,6 @@ data class ReceivingMoveItem(
     val quantityDone: Double,
     val uomName: String,
     val lotName: String,
-    val rfid: String
+    val rfid: String,
+    var pendingRfid: String? = null
 ) : Serializable

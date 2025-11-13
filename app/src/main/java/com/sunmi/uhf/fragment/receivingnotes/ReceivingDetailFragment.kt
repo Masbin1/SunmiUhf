@@ -26,6 +26,7 @@ class ReceivingDetailFragment : Fragment() {
     private lateinit var txtScheduledDate: TextView
     private lateinit var txtState: TextView
     private var moveLines: MutableList<ReceivingMoveItem> = mutableListOf()
+    private val pendingRfidUpdates: MutableMap<Int, String> = mutableMapOf()
 
     companion object {
         fun newInstance(id: Int): ReceivingDetailFragment {
@@ -81,10 +82,18 @@ class ReceivingDetailFragment : Fragment() {
         }
         val index = moveLines.indexOfFirst { it.moveId == moveId }
         if (index != -1) {
-            moveLines[index] = moveLines[index].copy(rfid = rfid)
-            adapter.updateData(moveLines)
+            if (rfid == moveLines[index].rfid) {
+                pendingRfidUpdates.remove(moveId)
+                moveLines[index].pendingRfid = null
+            } else {
+                pendingRfidUpdates[moveId] = rfid
+                moveLines[index].pendingRfid = rfid
+            }
+            adapter.notifyItemChanged(index)
         }
     }
+
+    fun getPendingRfidUpdates(): Map<Int, String> = pendingRfidUpdates.toMap()
 
     private fun loadReceivingDetail() {
         progressBar.visibility = View.VISIBLE
@@ -123,6 +132,13 @@ class ReceivingDetailFragment : Fragment() {
                             rfid = line.optString("rfid", "")
                         )
                     )
+                }
+
+                pendingRfidUpdates.forEach { (id, value) ->
+                    val idx = list.indexOfFirst { it.moveId == id }
+                    if (idx != -1) {
+                        list[idx].pendingRfid = value
+                    }
                 }
 
                 moveLines = list
