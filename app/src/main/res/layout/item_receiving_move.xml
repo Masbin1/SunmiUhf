@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="#FFFFFF"
+    android:padding="12dp"
+    android:elevation="1dp"
+    android:layout_marginBottom="8dp">
+
+    <TextView
+        android:id="@+id/txtProduct"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Product Name"
+        android:textStyle="bold"
+        android:textColor="#1E1E1E"
+        android:textSize="16sp" />
+
+    <TextView
+        android:id="@+id/txtLot"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Lot: -"
+        android:textColor="#444444"
+        android:layout_marginTop="2dp" />
+
+    <TextView
+        android:id="@+id/txtQty"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Qty: 0/0"
+        android:textColor="#444444"
+        android:layout_marginTop="2dp" />
+
+    <TextView
+        android:id="@+id/txtUom"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="UoM: Unit"
+        android:textColor="#444444"
+        android:layout_marginTop="2dp" />
+
+    <Button
+        android:id="@+id/btnScanRfid"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Scan RFID"
+        android:layout_marginTop="8dp"
+        android:backgroundTint="#216eff"
+        android:textColor="@android:color/white"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="6dp"
+        android:layout_gravity="end"/>
+</LinearLayout>

@@ -144,12 +144,67 @@
             app:layout_constraintTop_toTopOf="@id/label_operation_tv"
             sunmi:outline="@{`12`}" />
 
+        <TextView
+            android:id="@+id/label_deliver_item"
+            android:layout_width="386dp"
+            android:layout_height="53dp"
+            android:layout_marginTop="8dp"
+            android:background="@color/labelPickupColor"
+            android:gravity="center_horizontal"
+            android:onClick="@{()->vm.onDeliveryItem()}"
+            android:paddingTop="15dp"
+            android:text="Delivery Order"
+            android:textColor="@color/white"
+            android:textSize="@dimen/sunmi_32ps"
+            app:layout_constraintEnd_toEndOf="@+id/label_location_tv"
+            app:layout_constraintHorizontal_weight="1"            app:layout_constraintLeft_toLeftOf="@id/label_operation_tv"
+            app:layout_constraintRight_toRightOf="@id/label_location_tv"
+            app:layout_constraintTop_toBottomOf="@id/label_operation_tv"
+            sunmi:outline="@{`12`}" />
+
+        <TextView
+            android:id="@+id/label_repair_order"
+            android:layout_width="386dp"
+            android:layout_height="53dp"
+            android:layout_marginTop="5dp"
+            android:background="@color/labelPickupColor"
+            android:gravity="center_horizontal"
+            android:onClick="@{()->vm.onReceivingNotes()}"
+            android:paddingTop="15dp"
+            android:text="Receiving Notes"
+            android:textColor="@color/white"
+            android:textSize="@dimen/sunmi_32ps"
+            app:layout_constraintEnd_toEndOf="@+id/label_deliver_item"
+            app:layout_constraintHorizontal_weight="1"
+            app:layout_constraintLeft_toLeftOf="@id/label_deliver_item"
+            app:layout_constraintRight_toRightOf="@id/label_location_tv"
+            app:layout_constraintTop_toBottomOf="@id/label_deliver_item"
+            sunmi:outline="@{`12`}" />
+
+        <TextView
+            android:id="@+id/asset"
+            android:layout_width="386dp"
+            android:layout_height="53dp"
+            android:layout_marginTop="5dp"
+            android:background="@color/labelPickupColor"
+            android:gravity="center_horizontal"
+            android:onClick="@{()->vm.onReceivingNotes()}"
+            android:paddingTop="15dp"
+            android:text="Asset"
+            android:textColor="@color/white"
+            android:textSize="@dimen/sunmi_32ps"
+            app:layout_constraintEnd_toEndOf="@+id/label_repair_order"
+            app:layout_constraintHorizontal_weight="1"
+            app:layout_constraintLeft_toLeftOf="@id/label_repair_order"
+            app:layout_constraintRight_toRightOf="@id/label_repair_order"
+            app:layout_constraintTop_toBottomOf="@id/label_repair_order"
+            sunmi:outline="@{`12`}" />
+
 
         <TextView
             android:id="@+id/label_filter_tv"
             android:layout_width="0dp"
             android:layout_height="@dimen/sunmi_100px"
-            android:layout_marginTop="@dimen/sunmi_30px"
             android:drawableLeft="@drawable/label_filter_icon"
             android:drawableRight="@drawable/right_arrow_icon"
             android:drawablePadding="@dimen/sunmi_20px"
@@ -161,7 +216,7 @@
             android:visibility="@{vm.isInner()? View.GONE:View.VISIBLE}"
             app:layout_constraintLeft_toLeftOf="@id/label_operation_tv"
             app:layout_constraintRight_toRightOf="@id/label_location_tv"
-            app:layout_constraintTop_toBottomOf="@id/label_operation_tv" />
+            app:layout_constraintTop_toBottomOf="@id/asset" />
 
         <View
             android:id="@+id/label_filter_line"

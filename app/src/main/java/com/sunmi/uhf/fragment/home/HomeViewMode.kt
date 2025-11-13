@@ -45,6 +45,14 @@ class HomeViewMode : BaseViewModel() {
         EventConstant.EVENT_LABEL_LOCATION.publish()
     }
 
+    fun onDeliveryItem(){
+        EventConstant.EVENT_DELIVER_ITEM.publish()
+    }
+
+    fun onReceivingNotes(){
+        EventConstant.EVENT_RECEIVING_NOTES.publish()
+    }
+
     /**
      * 标签过滤的点击事件
      */

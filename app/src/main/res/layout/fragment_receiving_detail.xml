@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFFFFF">
+
+    <!-- Progress Bar -->
+    <ProgressBar
+        android:id="@+id/progressBarReceivingDetail"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_gravity="center"
+        android:visibility="gone" />
+
+    <!-- Content -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:id="@+id/layoutContentReceiving"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Header -->
+            <TextView
+                android:id="@+id/txtReceivingTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Receiving Note Detail"
+                android:textStyle="bold"
+                android:textSize="20sp"
+                android:textColor="#1E1E1E"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Info Box -->
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#F7F8FA"
+                android:padding="12dp"
+                android:layout_marginBottom="16dp"
+                android:elevation="2dp">
+
+                <TextView
+                    android:id="@+id/txtReceivingName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Receiving Number:"
+                    android:textStyle="bold"
+                    android:textColor="#333333" />
+
+                <TextView
+                    android:id="@+id/txtPartner"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Vendor:"
+                    android:layout_marginTop="4dp" />
+
+                <TextView
+                    android:id="@+id/txtScheduledDate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Scheduled Date:"
+                    android:layout_marginTop="4dp" />
+
+                <TextView
+                    android:id="@+id/txtState"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="State:"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+
+            <!-- Move Lines -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Move Lines"
+                android:textStyle="bold"
+                android:textColor="#1E1E1E"
+                android:textSize="18sp"
+                android:layout_marginBottom="8dp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewReceiving"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false" />
+        </LinearLayout>
+    </ScrollView>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -55,6 +55,12 @@ object EventConstant {
     /** 销毁标签 */
     const val EVENT_OPERATION_DESTROY_TAG = 1013
 
+//    ini untuk Delivery Order
+    const val EVENT_DELIVER_ITEM = 1103
+
+    // ini untuk Receiving
+    const val EVENT_RECEIVING_NOTES = 1104
+
     /** area name */
     const val LABEL_OPERATION_AREA = "label_operation_area"
 

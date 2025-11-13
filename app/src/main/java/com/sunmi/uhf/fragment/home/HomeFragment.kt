@@ -19,10 +19,12 @@ import com.sunmi.uhf.constants.Config
 import com.sunmi.uhf.constants.EventConstant
 import com.sunmi.uhf.databinding.FragmentHomeBinding
 import com.sunmi.uhf.event.SimpleViewEvent
+import com.sunmi.uhf.fragment.deliveryorder.DeliveryFragment
 import com.sunmi.uhf.fragment.filter.LabelFilterFragment
 import com.sunmi.uhf.fragment.location.LabelLocationFragment
 import com.sunmi.uhf.fragment.operation.LabelOperationFragment
 import com.sunmi.uhf.fragment.readwrite.ReadWriteFragment
+import com.sunmi.uhf.fragment.receivingnotes.ReceivingFragment
 import com.sunmi.uhf.fragment.setting.SettingFragment
 import com.sunmi.uhf.fragment.takeinventory.TakeInventoryFragment
 import com.sunmi.uhf.utils.LogUtils
@@ -137,6 +139,26 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                     clearStack = false
                 )
             }
+
+            EventConstant.EVENT_RECEIVING_NOTES ->{
+                //This is for repair order check
+                switchFragment(
+                    ReceivingFragment.newInstance(null),
+                    addToBackStack = true,
+                    clearStack = false
+                )
+            }
+
+
+            EventConstant.EVENT_DELIVER_ITEM -> {
+//                This is for Delivery Order to customer
+                switchFragment(
+                    DeliveryFragment.newInstance(null),
+                    addToBackStack = true,
+                    clearStack = false
+                )
+            }
+
             EventConstant.EVENT_LABEL_OPERATION -> {
                 //标签操作存页
                 switchFragment(

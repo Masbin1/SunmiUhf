@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
@@ -6,6 +8,17 @@ plugins {
     id 'kotlin-kapt'
     id 'kotlin-parcelize'
 }
+
+def localPropertiesFile = rootProject.file("local.properties")
+def localProperties = new Properties()
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withReader("UTF-8") { reader ->
+        localProperties.load(reader)
+    }
+}
+
+def serverUrlValue = localProperties.getProperty("SERVER_URL", "")
+def escapedServerUrl = serverUrlValue.replace("\\", "\\\\").replace('"', '\\"')
 
 android {
     compileSdkVersion 29
@@ -22,6 +35,7 @@ android {
         versionName "1.0.18"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField "String", "SERVER_URL", "\"${escapedServerUrl}\""
     }
     signingConfigs {
         config {//签名

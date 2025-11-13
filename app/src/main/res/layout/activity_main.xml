@@ -2,12 +2,26 @@
 <layout xmlns:android="http://schemas.android.com/apk/res/android">
 
     <data>
-
+        <!-- Kalau nanti mau pakai binding variable -->
     </data>
 
+    <!-- Root view -->
     <FrameLayout
         android:id="@+id/main_content"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fitsSystemWindows="true"/>
+        android:fitsSystemWindows="true">
+
+        <!-- Container tempat fragment ReceivingFragment dan ReceivingDetailFragment akan ditampilkan -->
+        <FrameLayout
+            android:id="@+id/frameLayoutReceiving"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <FrameLayout
+            android:id="@+id/frameLayoutDelivery"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+    </FrameLayout>
 </layout>
