@@ -316,6 +316,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         }
         // TODO: Query server for product info for each RFID
         // For now, just send the RFIDs
+        vm.editEnExport.postValue(adapter.selectData.size > 0)
         deliveryScanResultListener?.invoke(rfids)
         performBackClick()
     }
