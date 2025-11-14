@@ -135,11 +135,7 @@ class TakeInventoryModel : BaseViewModel() {
     }
 
     fun onProcessClick() {
-        if (receivingVisible.value == true) {
-            EventConstant.EVENT_RECEIVING_PROCESS.publish()
-        } else if (deliveryVisible.value == true) {
-            EventConstant.EVENT_DELIVERY_PROCESS.publish()
-        }
+        EventConstant.EVENT_RECEIVING_PROCESS.publish()
     }
 
     fun onDeliveryProcessClick() {
