@@ -12,6 +12,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.sunmi.uhf.BuildConfig
 import com.sunmi.uhf.R
+import android.widget.Toast
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.sunmi.uhf.fragment.takeinventory.TakeInventoryFragment
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
@@ -27,6 +30,10 @@ class DeliveryDetailFragment : Fragment() {
     private lateinit var txtScheduledDate: TextView
     private lateinit var txtOrigin: TextView
     private lateinit var txtState: TextView
+
+    // Floating Buttons
+    private lateinit var btnScan: FloatingActionButton
+    private lateinit var btnSave: FloatingActionButton
 
     companion object {
         fun newInstance(id: Int): DeliveryDetailFragment {
@@ -49,6 +56,7 @@ class DeliveryDetailFragment : Fragment() {
     ): View? {
         val view = inflater.inflate(R.layout.fragment_delivery_detail, container, false)
 
+        // Init Views
         txtDeliveryName = view.findViewById(R.id.txtDeliveryName)
         txtPartner = view.findViewById(R.id.txtPartner)
         txtScheduledDate = view.findViewById(R.id.txtScheduledDate)
@@ -57,9 +65,37 @@ class DeliveryDetailFragment : Fragment() {
         recyclerView = view.findViewById(R.id.recyclerViewDeliveryMove)
         progressBar = view.findViewById(R.id.progressBarDeliveryDetail)
 
+        // Init Floating Buttons
+        btnScan = view.findViewById(R.id.btnScan)
+        btnSave = view.findViewById(R.id.btnSave)
+
+        // RecyclerView
         adapter = DeliveryMoveAdapter(emptyList())
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
+
+        // Button Scan
+        btnScan.setOnClickListener {
+            val args = Bundle().apply {
+                putInt(TakeInventoryFragment.ARG_KEY_PICKING_ID, deliveryId)
+            }
+
+            val fragment = TakeInventoryFragment.newInstance(args)
+            fragment.setDeliveryScanResultListener { rfids ->
+                handleDeliveryScanResult(rfids)
+            }
+
+            (activity as? com.sunmi.uhf.base.BaseActivity<*>)?.switchFragment(
+                fragment,
+                addToBackStack = true,
+                clearStack = false
+            )
+        }
+
+        // Button Save
+        btnSave.setOnClickListener {
+            Toast.makeText(requireContext(), "Save clicked", Toast.LENGTH_SHORT).show()
+        }
 
         loadDeliveryDetail()
         return view
@@ -68,6 +104,7 @@ class DeliveryDetailFragment : Fragment() {
     private fun loadDeliveryDetail() {
         progressBar.visibility = View.VISIBLE
         val client = OkHttpClient()
+
         val request = Request.Builder()
             .url("${BuildConfig.SERVER_URL}/get/stock/picking/delivery/detail/$deliveryId")
             .build()
@@ -113,5 +150,16 @@ class DeliveryDetailFragment : Fragment() {
                 }
             }
         })
+    }
+
+    private fun handleDeliveryScanResult(rfids: List<String>) {
+        if (rfids.isEmpty()) return
+
+        // TODO: Query server for each RFID to get product info and update move_lines
+        // For now, just show a toast
+        Toast.makeText(requireContext(), "Scanned ${rfids.size} RFIDs: ${rfids.joinToString()}", Toast.LENGTH_SHORT).show()
+
+        // Placeholder: Add dummy move_lines for demonstration
+        // In real implementation, query server and update moveLines list, then adapter.updateData(moveLines)
     }
 }

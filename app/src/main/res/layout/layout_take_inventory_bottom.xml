@@ -133,7 +133,7 @@
             android:focusable="true"
             android:alpha="@{vm.editEnExport ? 1.0f : 0.4f}"
             android:onClick="@{()->vm.onProcessClick()}"
-            android:visibility="@{vm.receivingVisible &amp;&amp; vm.editEnExport ? View.VISIBLE : View.GONE}"
+            android:visibility="@{(vm.receivingVisible || vm.deliveryVisible) &amp;&amp; vm.editEnExport ? View.VISIBLE : View.GONE}"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FFFFFF">
@@ -44,9 +45,7 @@
                 android:background="#F7F8FA"
                 android:padding="12dp"
                 android:layout_marginBottom="16dp"
-                android:elevation="2dp"
-                android:layout_gravity="center"
-                android:backgroundTintMode="src_over">
+                android:elevation="2dp">
 
                 <TextView
                     android:id="@+id/txtDeliveryName"
@@ -103,4 +102,32 @@
 
         </LinearLayout>
     </ScrollView>
+
+    <!-- Floating Buttons -->
+    <LinearLayout
+        android:id="@+id/fabContainer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnScan"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:contentDescription="Scan"
+            android:src="@drawable/ic_scan"
+            app:backgroundTint="@color/blue_primary" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnSave"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="Save"
+            android:src="@android:drawable/ic_menu_save"
+            app:backgroundTint="@color/blue_primary" />
+    </LinearLayout>
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

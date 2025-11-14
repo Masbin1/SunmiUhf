@@ -53,6 +53,8 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     lateinit var vm: TakeInventoryModel
     private var receivingItem: ReceivingMoveItem? = null
     private var receivingScanResultListener: ((Int, String) -> Unit)? = null
+    private var pickingId: Int? = null
+    private var deliveryScanResultListener: ((List<String>) -> Unit)? = null
     private var isLoop = false
     private var allCount = 0
     private val list = mutableListOf<LabelInfoBean>()
@@ -96,6 +98,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         receivingItem = arguments?.getSerializable(ARG_KEY_RECEIVING_ITEM) as? ReceivingMoveItem
+        pickingId = arguments?.getInt(ARG_KEY_PICKING_ID)
     }
 
     override fun initVM() {
@@ -134,6 +137,13 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
             vm.editModel.value = true
         } ?: run {
             vm.receivingVisible.value = false
+        }
+
+        pickingId?.let {
+            vm.deliveryVisible.value = true
+            vm.editModel.value = true
+        } ?: run {
+            vm.deliveryVisible.value = false
         }
         adapter.setNewInstance(list)
         vm.topSearchEn.value = !list.isNullOrEmpty()
@@ -252,6 +262,9 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
             EventConstant.EVENT_RECEIVING_PROCESS -> {
                 processReceivingSelection()
             }
+            EventConstant.EVENT_DELIVERY_PROCESS -> {
+                processDeliverySelection()
+            }
             EventConstant.EVENT_TAKE_LABEL_INFO -> {
 
             }
@@ -292,6 +305,18 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         adapter.notifyDataSetChanged()
         vm.editEnExport.postValue(false)
         vm.selectAll.postValue(false)
+        performBackClick()
+    }
+
+    private fun processDeliverySelection() {
+        val rfids = tidList.toList() // Get all scanned RFIDs
+        if (rfids.isEmpty()) {
+            mainScope.launch { showShort(getString(R.string.please_take_inventory_before_proceeding)) }
+            return
+        }
+        // TODO: Query server for product info for each RFID
+        // For now, just send the RFIDs
+        deliveryScanResultListener?.invoke(rfids)
         performBackClick()
     }
 
@@ -853,11 +878,16 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         }
     }
 
+    fun setDeliveryScanResultListener(listener: (List<String>) -> Unit) {
+        deliveryScanResultListener = listener
+    }
+
     companion object {
         fun newInstance(args: Bundle?) = TakeInventoryFragment()
             .apply { arguments = args }
 
         const val ARG_KEY_RECEIVING_ITEM = "arg_receiving_item"
+        const val ARG_KEY_PICKING_ID = "arg_picking_id"
         const val REQUEST_PERMISSION_ID = 101
     }
 }

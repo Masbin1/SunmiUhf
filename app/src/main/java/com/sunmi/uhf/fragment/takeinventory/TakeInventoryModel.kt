@@ -60,6 +60,7 @@ class TakeInventoryModel : BaseViewModel() {
     val receivingQty = MutableLiveData<String>()
     val receivingUom = MutableLiveData<String>()
     val receivingRfid = MutableLiveData<String>()
+    val deliveryVisible = MutableLiveData<Boolean>(false)
 
     /**
      * 返回点击事件
@@ -134,7 +135,15 @@ class TakeInventoryModel : BaseViewModel() {
     }
 
     fun onProcessClick() {
-        EventConstant.EVENT_RECEIVING_PROCESS.publish()
+        if (receivingVisible.value == true) {
+            EventConstant.EVENT_RECEIVING_PROCESS.publish()
+        } else if (deliveryVisible.value == true) {
+            EventConstant.EVENT_DELIVERY_PROCESS.publish()
+        }
+    }
+
+    fun onDeliveryProcessClick() {
+        EventConstant.EVENT_DELIVERY_PROCESS.publish()
     }
 
     /**
