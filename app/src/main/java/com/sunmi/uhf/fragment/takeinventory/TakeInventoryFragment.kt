@@ -46,6 +46,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.min
 
 /**
@@ -366,6 +367,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                         if (success) {
                             val results = payload.optJSONArray("results") ?: JSONArray()
                             val validRfids = mutableListOf<String>()
+                            val pendingMoves = AtomicInteger(0)
 
                             for (i in 0 until results.length()) {
                                 val result = results.optJSONObject(i) ?: continue
@@ -376,8 +378,13 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
 
                                 if (status == "found" && productId != -1) {
                                     validRfids.add(rfid)
+                                    pendingMoves.incrementAndGet()
                                     // panggil fungsi createStockMove di background / worker — sesuai implementasimu
-                                    createStockMove(pickingId, productId, lotId, rfid)
+                                    createStockMove(pickingId, productId, lotId, rfid) {
+                                        if (pendingMoves.decrementAndGet() == 0) {
+                                            mainScope.launch { performBackClick() }
+                                        }
+                                    }
                                 }
                             }
 
@@ -387,31 +394,33 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                                     deliveryScanResultListener?.invoke(validRfids)
                                 } else {
                                     showShort("No valid RFIDs found")
+                                    performBackClick()
                                 }
                             }
                         } else {
                             val error = payload.optString("error", "Unknown error")
                             mainScope.launch {
                                 showShort("Check RFID failed: $error")
+                                performBackClick()
                             }
                         }
-
-                        performBackClick()
                     } catch (e: Exception) {
                         mainScope.launch {
                             showShort("Error parsing response: ${e.message}")
+                            performBackClick()
                         }
                     }
                 } else {
                     mainScope.launch {
                         showShort("Server error: ${response.code}")
+                        performBackClick()
                     }
                 }
             }
         })
     }
 
-    private fun createStockMove(pickingId: Int, productId: Int, lotId: Int?, rfid: String) {
+    private fun createStockMove(pickingId: Int, productId: Int, lotId: Int?, rfid: String, onComplete: (() -> Unit)? = null) {
         val client = OkHttpClient()
         val jsonBody = JSONObject().apply {
             put("picking_id", pickingId)
@@ -436,6 +445,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
             override fun onFailure(call: Call, e: IOException) {
                 // Log error, but don't show to user as it's async
                 LogUtils.e("createStockMove", "Failed: ${e.message}")
+                onComplete?.invoke()
             }
 
             override fun onResponse(call: Call, response: Response) {
@@ -457,6 +467,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                 } else {
                     LogUtils.e("createStockMove", "Server error: ${response.code}")
                 }
+                onComplete?.invoke()
             }
         })
     }
