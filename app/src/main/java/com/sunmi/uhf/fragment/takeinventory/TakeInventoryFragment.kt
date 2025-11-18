@@ -353,21 +353,34 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                 if (response.isSuccessful && body != null) {
                     try {
                         val jsonResponse = JSONObject(body)
-                        val success = jsonResponse.getBoolean("success")
+
+                        // Jika Odoo mengembalikan JSON-RPC wrapper, ambil objek result
+                        val payload = if (jsonResponse.has("result")) {
+                            jsonResponse.getJSONObject("result")
+                        } else {
+                            jsonResponse
+                        }
+
+                        // Ambil success dengan aman
+                        val success = payload.optBoolean("success", false)
                         if (success) {
-                            val results = jsonResponse.getJSONArray("results")
+                            val results = payload.optJSONArray("results") ?: JSONArray()
                             val validRfids = mutableListOf<String>()
+
                             for (i in 0 until results.length()) {
-                                val result = results.getJSONObject(i)
-                                val rfid = result.getString("rfid")
+                                val result = results.optJSONObject(i) ?: continue
+                                val rfid = result.optString("rfid", "")
                                 val productId = result.optInt("product_id", -1)
                                 val lotId = result.optInt("lot_id", -1)
-                                val status = result.getString("status")
+                                val status = result.optString("status", "")
+
                                 if (status == "found" && productId != -1) {
                                     validRfids.add(rfid)
+                                    // panggil fungsi createStockMove di background / worker — sesuai implementasimu
                                     createStockMove(pickingId, productId, lotId, rfid)
                                 }
                             }
+
                             mainScope.launch {
                                 if (validRfids.isNotEmpty()) {
                                     showShort("Processed ${validRfids.size} valid RFIDs")
@@ -377,13 +390,14 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                                 }
                             }
                         } else {
-                            val error = jsonResponse.optString("error", "Unknown error")
+                            val error = payload.optString("error", "Unknown error")
                             mainScope.launch {
                                 showShort("Check RFID failed: $error")
                             }
                         }
+
                         performBackClick()
-                     } catch (e: Exception) {
+                    } catch (e: Exception) {
                         mainScope.launch {
                             showShort("Error parsing response: ${e.message}")
                         }
