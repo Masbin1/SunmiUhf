@@ -37,7 +37,7 @@ class DeliveryFragment : Fragment() {
 
 
         adapter = DeliveryAdapter(emptyList()) { item ->
-            val fragment = DeliveryDetailFragment.newInstance(item.id)
+            val fragment = DeliveryDetailFragment.newInstance(item)
             (activity as? BaseActivity<*>)?.switchFragment(
                 fragment,
                 addToBackStack = true,

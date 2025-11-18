@@ -21,9 +21,11 @@ import java.io.IOException
 class ReceivingDetailFragment : Fragment() {
 
     private var receivingId: Int = 0
+    private var receivingItem: ReceivingItem? = null
     private lateinit var adapter: ReceivingMoveAdapter
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
+    private lateinit var progressBarMoveLines: ProgressBar
     private lateinit var txtReceivingName: TextView
     private lateinit var txtPartner: TextView
     private lateinit var txtScheduledDate: TextView
@@ -41,11 +43,21 @@ class ReceivingDetailFragment : Fragment() {
             fragment.arguments = args
             return fragment
         }
+
+        fun newInstance(item: ReceivingItem): ReceivingDetailFragment {
+            val fragment = ReceivingDetailFragment()
+            val args = Bundle()
+            args.putInt("receiving_id", item.id)
+            args.putParcelable("receiving_item", item)
+            fragment.arguments = args
+            return fragment
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         receivingId = arguments?.getInt("receiving_id") ?: 0
+        receivingItem = arguments?.getParcelable("receiving_item")
     }
 
     override fun onCreateView(
@@ -59,6 +71,7 @@ class ReceivingDetailFragment : Fragment() {
         txtState = view.findViewById(R.id.txtState)
         recyclerView = view.findViewById(R.id.recyclerViewReceiving)
         progressBar = view.findViewById(R.id.progressBarReceivingDetail)
+        progressBarMoveLines = view.findViewById(R.id.progressBarMoveLines)
         btnSaveReceiving = view.findViewById(R.id.btnSaveReceiving)
 
         adapter = ReceivingMoveAdapter(emptyList()) { item ->
@@ -83,8 +96,23 @@ class ReceivingDetailFragment : Fragment() {
 
         btnSaveReceiving.setOnClickListener { saveReceivingToServer() }
 
-        loadReceivingDetail()
+        if (receivingItem != null) {
+            displayHeaderImmediately()
+            loadMoveLines()
+        } else {
+            loadReceivingDetail()
+        }
         return view
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun displayHeaderImmediately() {
+        receivingItem?.let {
+            txtReceivingName.text = "Receiving Number: ${it.name}"
+            txtPartner.text = "Vendor: ${it.partnerName}"
+            txtScheduledDate.text = "Scheduled Date: ${it.scheduledDate}"
+            txtState.text = "State: ${it.state}"
+        }
     }
 
     /**
@@ -165,11 +193,9 @@ class ReceivingDetailFragment : Fragment() {
         })
     }
 
-    /**
-     * Ambil detail receiving dari server
-     */
-    private fun loadReceivingDetail() {
+    private fun loadMoveLines() {
         progressBar.visibility = View.VISIBLE
+        progressBarMoveLines.visibility = View.VISIBLE
 
         val client = OkHttpClient()
         val request = Request.Builder()
@@ -180,19 +206,20 @@ class ReceivingDetailFragment : Fragment() {
             override fun onFailure(call: Call, e: IOException) {
                 activity?.runOnUiThread {
                     progressBar.visibility = View.GONE
+                    progressBarMoveLines.visibility = View.GONE
                     Toast.makeText(requireContext(), "Failed to load data", Toast.LENGTH_SHORT).show()
                 }
             }
 
-            @SuppressLint("SetTextI18n")
             override fun onResponse(call: Call, response: Response) {
                 val jsonData = response.body?.string()
                 if (jsonData.isNullOrEmpty()) return
 
                 val jsonObj = JSONObject(jsonData)
                 val pickingObj = jsonObj.getJSONObject("picking")
-                val moveLinesArray = pickingObj.getJSONArray("move_lines")
 
+                // Process move lines
+                val moveLinesArray = pickingObj.getJSONArray("move_lines")
                 val list = mutableListOf<ReceivingMoveItem>()
                 for (i in 0 until moveLinesArray.length()) {
                     val line = moveLinesArray.getJSONObject(i)
@@ -217,13 +244,86 @@ class ReceivingDetailFragment : Fragment() {
 
                 moveLines = list
 
+                // Display move lines
+                activity?.runOnUiThread {
+                    if (receivingItem == null) {
+                        displayHeaderImmediately()
+                    }
+                    adapter.updateData(list)
+                    progressBar.visibility = View.GONE
+                    progressBarMoveLines.visibility = View.GONE
+                }
+            }
+        })
+    }
+
+    /**
+     * Ambil detail receiving dari server (fallback jika tidak ada item data)
+     */
+    private fun loadReceivingDetail() {
+        progressBar.visibility = View.VISIBLE
+
+        val client = OkHttpClient()
+        val request = Request.Builder()
+            .url("${BuildConfig.SERVER_URL}/get/stock/picking/receiving/detail/$receivingId")
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                activity?.runOnUiThread {
+                    progressBar.visibility = View.GONE
+                    Toast.makeText(requireContext(), "Failed to load data", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            @SuppressLint("SetTextI18n")
+            override fun onResponse(call: Call, response: Response) {
+                val jsonData = response.body?.string()
+                if (jsonData.isNullOrEmpty()) return
+
+                val jsonObj = JSONObject(jsonData)
+                val pickingObj = jsonObj.getJSONObject("picking")
+
+                // Display header immediately
                 activity?.runOnUiThread {
                     txtReceivingName.text = "Receiving Number: ${pickingObj.getString("name")}"
                     txtPartner.text = "Vendor: ${pickingObj.getString("partner_name")}"
                     txtScheduledDate.text = "Scheduled Date: ${pickingObj.getString("scheduled_date")}"
                     txtState.text = "State: ${pickingObj.getString("state")}"
-                    adapter.updateData(list)
                     progressBar.visibility = View.GONE
+                    progressBarMoveLines.visibility = View.VISIBLE
+                }
+
+                // Process move lines
+                val moveLinesArray = pickingObj.getJSONArray("move_lines")
+                val list = mutableListOf<ReceivingMoveItem>()
+                for (i in 0 until moveLinesArray.length()) {
+                    val line = moveLinesArray.getJSONObject(i)
+                    list.add(
+                        ReceivingMoveItem(
+                            moveId = line.getInt("id"),
+                            productName = line.getString("product_name"),
+                            productUomQty = line.getDouble("product_uom_qty"),
+                            quantityDone = line.getDouble("quantity_done"),
+                            uomName = line.getString("uom_name"),
+                            lotName = line.getString("lot_name"),
+                            rfid = line.optString("rfid", "")
+                        )
+                    )
+                }
+
+                // Tandai pending RFID jika ada
+                pendingRfidUpdates.forEach { (id, value) ->
+                    val idx = list.indexOfFirst { it.moveId == id }
+                    if (idx != -1) list[idx].pendingRfid = value
+                }
+
+                moveLines = list
+
+                // Display move lines
+                activity?.runOnUiThread {
+                    adapter.updateData(list)
+                    progressBarMoveLines.visibility = View.GONE
                 }
             }
         })

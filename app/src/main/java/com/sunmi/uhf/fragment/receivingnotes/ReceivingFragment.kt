@@ -35,7 +35,7 @@ class ReceivingFragment : Fragment() {
         contentLayout = view.findViewById(R.id.contentLayoutReceiving)
 
         adapter = ReceivingAdapter(emptyList()) { item ->
-            val fragment = ReceivingDetailFragment.newInstance(item.id)
+            val fragment = ReceivingDetailFragment.newInstance(item)
             (activity as? BaseActivity<*>)?.switchFragment(
                 fragment,
                 addToBackStack = true,
