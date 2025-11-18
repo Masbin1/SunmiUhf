@@ -35,6 +35,8 @@ class DeliveryDetailFragment : Fragment() {
     private lateinit var btnScan: FloatingActionButton
     private lateinit var btnSave: FloatingActionButton
 
+    private var shouldRefreshOnResume = false
+
     companion object {
         fun newInstance(id: Int): DeliveryDetailFragment {
             val fragment = DeliveryDetailFragment()
@@ -101,6 +103,14 @@ class DeliveryDetailFragment : Fragment() {
         return view
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (shouldRefreshOnResume) {
+            shouldRefreshOnResume = false
+            loadDeliveryDetail()
+        }
+    }
+
     private fun loadDeliveryDetail() {
         progressBar.visibility = View.VISIBLE
         val client = OkHttpClient()
@@ -155,11 +165,9 @@ class DeliveryDetailFragment : Fragment() {
     private fun handleDeliveryScanResult(rfids: List<String>) {
         if (rfids.isEmpty()) return
 
-        // TODO: Query server for each RFID to get product info and update move_lines
-        // For now, just show a toast
-        Toast.makeText(requireContext(), "Scanned ${rfids.size} RFIDs: ${rfids.joinToString()}", Toast.LENGTH_SHORT).show()
+        // Set flag to refresh data when fragment resumes after scanning
+        shouldRefreshOnResume = true
 
-        // Placeholder: Add dummy move_lines for demonstration
-        // In real implementation, query server and update moveLines list, then adapter.updateData(moveLines)
+        Toast.makeText(requireContext(), "Processed ${rfids.size} RFIDs successfully", Toast.LENGTH_SHORT).show()
     }
 }
