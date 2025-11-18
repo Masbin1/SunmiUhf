@@ -79,19 +79,6 @@ class TakeInventoryModel : BaseViewModel() {
                 )
     }
 
-//    fun shouldShowReceivingScan(): Boolean {
-//        val receiving = receivingVisible.value ?: false
-//        val edit = editModel.value ?: false
-//        val start = start.value ?: false
-//        return receiving && edit
-//    }
-//
-//    fun shouldShowDeliveryScan(): Boolean {
-//        val delivery = deliveryVisible.value ?: false
-//        val edit = editModel.value ?: false
-//        val start = start.value ?: false
-//        return delivery && edit
-//    }
 
 
     fun shouldShowReceiving(): Boolean {

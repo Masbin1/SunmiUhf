@@ -22,6 +22,7 @@ import com.sunmi.rfid.constant.CMD
 import com.sunmi.rfid.constant.ParamCts
 import com.sunmi.rfid.entity.DataParameter
 import com.sunmi.uhf.App
+import com.sunmi.uhf.BuildConfig
 import com.sunmi.uhf.R
 import com.sunmi.uhf.adapter.LabelInfoAdapter
 import com.sunmi.uhf.adapter.TakeModelAdapter
@@ -33,12 +34,18 @@ import com.sunmi.uhf.databinding.FragmentTakeInventoryBinding
 import com.sunmi.uhf.dialog.SureBackDialog
 import com.sunmi.uhf.event.SimpleViewEvent
 import com.sunmi.uhf.fragment.ReadBaseFragment
+import com.sunmi.uhf.fragment.deliveryorder.DeliveryMoveItem
 import com.sunmi.uhf.fragment.receivingnotes.ReceivingMoveItem
 import com.sunmi.uhf.utils.*
 import com.sunmi.uhf.view.RecycleDivider
 import com.sunmi.widget.dialog.InputDialog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.IOException
 import kotlin.math.min
 
 /**
@@ -309,16 +316,135 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     }
 
     private fun processDeliverySelection() {
+        val item = pickingId ?: return
         val rfids = tidList.toList() // Get all scanned RFIDs
         if (rfids.isEmpty()) {
             mainScope.launch { showShort(getString(R.string.please_take_inventory_before_proceeding)) }
             return
         }
-        // TODO: Query server for product info for each RFID
-        // For now, just send the RFIDs
-        vm.editEnExport.postValue(adapter.selectData.size > 0)
-        deliveryScanResultListener?.invoke(rfids)
-        performBackClick()
+        // Query server for product info for each RFID
+        checkRfidsAndCreateMoves(item, rfids)
+    }
+
+    private fun checkRfidsAndCreateMoves(pickingId: Int, rfids: List<String>) {
+        val client = OkHttpClient()
+        val jsonBody = JSONObject().apply {
+            put("rfids", JSONArray(rfids))
+        }
+        val requestBody = RequestBody.create(
+            "application/json".toMediaType(),
+            jsonBody.toString()
+        )
+        val request = Request.Builder()
+            .url("${BuildConfig.SERVER_URL}/check/rfid")
+            .post(requestBody)
+            .addHeader("Content-Type", "application/json")
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                mainScope.launch {
+                    showShort("Failed to check RFIDs: ${e.message}")
+                }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val body = response.body?.string()
+                if (response.isSuccessful && body != null) {
+                    try {
+                        val jsonResponse = JSONObject(body)
+                        val success = jsonResponse.getBoolean("success")
+                        if (success) {
+                            val results = jsonResponse.getJSONArray("results")
+                            val validRfids = mutableListOf<String>()
+                            for (i in 0 until results.length()) {
+                                val result = results.getJSONObject(i)
+                                val rfid = result.getString("rfid")
+                                val productId = result.optInt("product_id", -1)
+                                val lotId = result.optInt("lot_id", -1)
+                                val status = result.getString("status")
+                                if (status == "found" && productId != -1) {
+                                    validRfids.add(rfid)
+                                    createStockMove(pickingId, productId, lotId, rfid)
+                                }
+                            }
+                            mainScope.launch {
+                                if (validRfids.isNotEmpty()) {
+                                    showShort("Processed ${validRfids.size} valid RFIDs")
+                                    deliveryScanResultListener?.invoke(validRfids)
+                                } else {
+                                    showShort("No valid RFIDs found")
+                                }
+                            }
+                        } else {
+                            val error = jsonResponse.optString("error", "Unknown error")
+                            mainScope.launch {
+                                showShort("Check RFID failed: $error")
+                            }
+                        }
+                        performBackClick()
+                     } catch (e: Exception) {
+                        mainScope.launch {
+                            showShort("Error parsing response: ${e.message}")
+                        }
+                    }
+                } else {
+                    mainScope.launch {
+                        showShort("Server error: ${response.code}")
+                    }
+                }
+            }
+        })
+    }
+
+    private fun createStockMove(pickingId: Int, productId: Int, lotId: Int?, rfid: String) {
+        val client = OkHttpClient()
+        val jsonBody = JSONObject().apply {
+            put("picking_id", pickingId)
+            put("product_id", productId)
+            put("quantity", 1)
+            put("rfid", rfid)
+            if (lotId != null && lotId != -1) {
+                put("lot_id", lotId)
+            }
+        }
+        val requestBody = RequestBody.create(
+            "application/json".toMediaType(),
+            jsonBody.toString()
+        )
+        val request = Request.Builder()
+            .url("${BuildConfig.SERVER_URL}/create/stock/move/line")
+            .post(requestBody)
+            .addHeader("Content-Type", "application/json")
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                // Log error, but don't show to user as it's async
+                LogUtils.e("createStockMove", "Failed: ${e.message}")
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val body = response.body?.string()
+                if (response.isSuccessful && body != null) {
+                    try {
+                        val jsonResponse = JSONObject(body)
+                        val success = jsonResponse.getBoolean("success")
+                        if (!success) {
+                            val error = jsonResponse.optString("error", "Unknown error")
+                            LogUtils.e("createStockMove", "Failed: $error")
+                        } else {
+                            val message = jsonResponse.optString("message", "Move line created")
+                            LogUtils.d("createStockMove", message)
+                        }
+                    } catch (e: Exception) {
+                        LogUtils.e("createStockMove", "Error parsing response: ${e.message}")
+                    }
+                } else {
+                    LogUtils.e("createStockMove", "Server error: ${response.code}")
+                }
+            }
+        })
     }
 
     /**
