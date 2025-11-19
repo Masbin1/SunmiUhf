@@ -62,7 +62,11 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     private var receivingItem: ReceivingMoveItem? = null
     private var receivingScanResultListener: ((Int, String) -> Unit)? = null
     private var pickingId: Int? = null
+
+    private var assetId: Int? = null
     private var deliveryScanResultListener: ((List<String>) -> Unit)? = null
+
+    private var assetScanResultListener: ((List<String>) -> Unit)? = null
     private var isLoop = false
     private var allCount = 0
     private val list = mutableListOf<LabelInfoBean>()
@@ -107,6 +111,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         super.onCreate(savedInstanceState)
         receivingItem = arguments?.getSerializable(ARG_KEY_RECEIVING_ITEM) as? ReceivingMoveItem
         pickingId = arguments?.getInt(ARG_KEY_PICKING_ID)
+        assetId = arguments?.getInt(ARC_KEY_ASSET_ID)
     }
 
     override fun initVM() {
@@ -1034,12 +1039,18 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         deliveryScanResultListener = listener
     }
 
+    fun setAssetScanResultListener(listener: (List<String>) -> Unit) {
+        assetScanResultListener = listener
+    }
+
     companion object {
         fun newInstance(args: Bundle?) = TakeInventoryFragment()
             .apply { arguments = args }
 
         const val ARG_KEY_RECEIVING_ITEM = "arg_receiving_item"
         const val ARG_KEY_PICKING_ID = "arg_picking_id"
+
+        const val ARC_KEY_ASSET_ID = "arc_asset_id"
         const val REQUEST_PERMISSION_ID = 101
     }
 }

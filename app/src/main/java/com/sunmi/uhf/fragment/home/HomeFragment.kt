@@ -19,6 +19,7 @@ import com.sunmi.uhf.constants.Config
 import com.sunmi.uhf.constants.EventConstant
 import com.sunmi.uhf.databinding.FragmentHomeBinding
 import com.sunmi.uhf.event.SimpleViewEvent
+import com.sunmi.uhf.fragment.asset.AssetFragment
 import com.sunmi.uhf.fragment.deliveryorder.DeliveryFragment
 import com.sunmi.uhf.fragment.filter.LabelFilterFragment
 import com.sunmi.uhf.fragment.location.LabelLocationFragment
@@ -144,6 +145,15 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                 //This is for repair order check
                 switchFragment(
                     ReceivingFragment.newInstance(null),
+                    addToBackStack = true,
+                    clearStack = false
+                )
+            }
+
+            EventConstant.EVENT_ASSET ->{
+                //This is for repair order check
+                switchFragment(
+                    AssetFragment.newInstance(null),
                     addToBackStack = true,
                     clearStack = false
                 )

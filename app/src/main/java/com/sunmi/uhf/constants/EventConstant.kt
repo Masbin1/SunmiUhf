@@ -61,6 +61,9 @@ object EventConstant {
     // ini untuk Receiving
     const val EVENT_RECEIVING_NOTES = 1104
 
+    // ini untuk Asset
+    const val EVENT_ASSET = 1105
+
     /** area name */
     const val LABEL_OPERATION_AREA = "label_operation_area"
 

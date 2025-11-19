@@ -1,4 +1,4 @@
-package com.sunmi.uhf.fragment.deliveryorder
+package com.sunmi.uhf.fragment.asset
 
 import android.annotation.SuppressLint
 import android.os.Bundle
@@ -19,15 +19,15 @@ import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
 
-class DeliveryDetailFragment : Fragment() {
+class AssetDetailFragment : Fragment() {
 
-    private var deliveryId: Int = 0
-    private var deliveryItem: DeliveryItem? = null
-    private lateinit var adapter: DeliveryMoveAdapter
+    private var assetId: Int = 0
+    private var assetItem: AssetItem? = null
+    private lateinit var adapter: AssetMoveAdapter
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
     private lateinit var progressBarMoveLines: ProgressBar
-    private lateinit var txtDeliveryName: TextView
+    private lateinit var txtAssetName: TextView
     private lateinit var txtPartner: TextView
     private lateinit var txtScheduledDate: TextView
     private lateinit var txtOrigin: TextView
@@ -40,19 +40,19 @@ class DeliveryDetailFragment : Fragment() {
     private var shouldRefreshOnResume = false
 
     companion object {
-        fun newInstance(id: Int): DeliveryDetailFragment {
-            val fragment = DeliveryDetailFragment()
+        fun newInstance(id: Int): AssetDetailFragment {
+            val fragment = AssetDetailFragment()
             val args = Bundle()
-            args.putInt("delivery_id", id)
+            args.putInt("asset_id", id)
             fragment.arguments = args
             return fragment
         }
 
-        fun newInstance(item: DeliveryItem): DeliveryDetailFragment {
-            val fragment = DeliveryDetailFragment()
+        fun newInstance(item: AssetItem): AssetDetailFragment {
+            val fragment = AssetDetailFragment()
             val args = Bundle()
-            args.putInt("delivery_id", item.id)
-            args.putParcelable("delivery_item", item)
+            args.putInt("asset_id", item.id)
+            args.putParcelable("asset_item", item)
             fragment.arguments = args
             return fragment
         }
@@ -60,26 +60,25 @@ class DeliveryDetailFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        deliveryId = arguments?.getInt("delivery_id") ?: 0
-        deliveryItem = arguments?.getParcelable("delivery_item")
+        assetId = arguments?.getInt("asset_id") ?: 0
+        assetItem = arguments?.getParcelable("asset_item")
     }
 
-    @SuppressLint("MissingInflatedId")
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val view = inflater.inflate(R.layout.fragment_delivery_detail, container, false)
+        val view = inflater.inflate(R.layout.fragment_asset_detail, container, false)
 
         // Init Views
-        txtDeliveryName = view.findViewById(R.id.txtDeliveryName)
+        txtAssetName = view.findViewById(R.id.txtAssetName)
         txtPartner = view.findViewById(R.id.txtPartner)
         txtScheduledDate = view.findViewById(R.id.txtScheduledDate)
         txtOrigin = view.findViewById(R.id.txtOrigin)
         txtState = view.findViewById(R.id.txtState)
-        recyclerView = view.findViewById(R.id.recyclerViewDeliveryMove)
-        progressBar = view.findViewById(R.id.progressBarDeliveryDetail)
-        
+        recyclerView = view.findViewById(R.id.recyclerViewAssetMove)
+        progressBar = view.findViewById(R.id.progressBarAssetDetail)
+
         progressBarMoveLines = try {
             view.findViewById(R.id.progressBarMoveLines)
         } catch (e: Exception) {
@@ -91,19 +90,19 @@ class DeliveryDetailFragment : Fragment() {
         btnSave = view.findViewById(R.id.btnSave)
 
         // RecyclerView
-        adapter = DeliveryMoveAdapter(emptyList())
+        adapter = AssetMoveAdapter(emptyList())
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
 
         // Button Scan
         btnScan.setOnClickListener {
             val args = Bundle().apply {
-                putInt(TakeInventoryFragment.ARG_KEY_PICKING_ID, deliveryId)
+                putInt(TakeInventoryFragment.ARC_KEY_ASSET_ID, assetId)
             }
 
             val fragment = TakeInventoryFragment.newInstance(args)
-            fragment.setDeliveryScanResultListener { rfids ->
-                handleDeliveryScanResult(rfids)
+            fragment.setAssetScanResultListener { rfids ->
+                handleAssetScanResult(rfids)
             }
 
             (activity as? com.sunmi.uhf.base.BaseActivity<*>)?.switchFragment(
@@ -118,11 +117,11 @@ class DeliveryDetailFragment : Fragment() {
             Toast.makeText(requireContext(), "Save clicked", Toast.LENGTH_SHORT).show()
         }
 
-        if (deliveryItem != null) {
+        if (assetItem != null) {
             displayHeaderImmediately()
             loadMoveLines()
         } else {
-            loadDeliveryDetail()
+            loadAssetDetail()
         }
         return view
     }
@@ -137,10 +136,10 @@ class DeliveryDetailFragment : Fragment() {
 
     @SuppressLint("SetTextI18n")
     private fun displayHeaderImmediately() {
-        deliveryItem?.let {
-            txtDeliveryName.text = "Delivery Number: ${it.name}"
+        assetItem?.let {
+            txtAssetName.text = "Asset Number: ${it.name}"
             txtPartner.text = "Customer: ${it.partnerName}"
-            txtScheduledDate.text = "Scheduled Date: ${it.scheduledDate}"
+            txtScheduledDate.text = "Scheduled Date: ${it.dueDate}"
             txtOrigin.text = "Origin: -"
             txtState.text = "State: ${it.state}"
         }
@@ -152,7 +151,7 @@ class DeliveryDetailFragment : Fragment() {
         val client = OkHttpClient()
 
         val request = Request.Builder()
-            .url("${BuildConfig.SERVER_URL}/get/stock/picking/delivery/detail/$deliveryId")
+            .url("${BuildConfig.SERVER_URL}/get/asset/detail/$assetId")
             .build()
 
         client.newCall(request).enqueue(object : Callback {
@@ -166,27 +165,26 @@ class DeliveryDetailFragment : Fragment() {
             override fun onResponse(call: Call, response: Response) {
                 val jsonData = response.body?.string() ?: return
                 val jsonObj = JSONObject(jsonData)
-                val pickingObj = jsonObj.getJSONObject("picking")
+                val assetObj = jsonObj.getJSONObject("asset")
 
-                val moveLines = pickingObj.getJSONArray("move_lines")
-                val list = mutableListOf<DeliveryMoveItem>()
+                val moveLines = assetObj.getJSONArray("assets_line")
+                val list = mutableListOf<AssetMoveItem>()
 
                 for (i in 0 until moveLines.length()) {
                     val line = moveLines.getJSONObject(i)
                     list.add(
-                        DeliveryMoveItem(
-                            productName = line.getString("product_name"),
-                            productUomQty = line.getDouble("product_uom_qty"),
-                            quantityDone = line.getDouble("quantity_done"),
-                            uomName = line.getString("uom_name"),
-                            lotName = line.getString("lot_name"),
+                        AssetMoveItem(
+                            asset = line.getString("asset_id"),
+                            category = line.getString("category"),
+                            heldBy = line.getString("held_by"),
+                            employee = line.getString("employee"),
                             rfid = line.getString("rfid"),
                         )
                     )
                 }
 
                 requireActivity().runOnUiThread {
-                    if (deliveryItem == null) {
+                    if (assetItem == null) {
                         displayHeaderImmediately()
                     }
                     adapter.updateData(list)
@@ -197,12 +195,12 @@ class DeliveryDetailFragment : Fragment() {
         })
     }
 
-    private fun loadDeliveryDetail() {
+    private fun loadAssetDetail() {
         progressBar.visibility = View.VISIBLE
         val client = OkHttpClient()
 
         val request = Request.Builder()
-            .url("${BuildConfig.SERVER_URL}/get/stock/picking/delivery/detail/$deliveryId")
+            .url("${BuildConfig.SERVER_URL}/get/asset/detail/$assetId")
             .build()
 
         client.newCall(request).enqueue(object : Callback {
@@ -216,31 +214,30 @@ class DeliveryDetailFragment : Fragment() {
             override fun onResponse(call: Call, response: Response) {
                 val jsonData = response.body?.string() ?: return
                 val jsonObj = JSONObject(jsonData)
-                val pickingObj = jsonObj.getJSONObject("picking")
+                val assetObj = jsonObj.getJSONObject("asset")
 
-                val moveLines = pickingObj.getJSONArray("move_lines")
-                val list = mutableListOf<DeliveryMoveItem>()
+                val moveLines = assetObj.getJSONArray("assets_line")
+                val list = mutableListOf<AssetMoveItem>()
 
                 for (i in 0 until moveLines.length()) {
                     val line = moveLines.getJSONObject(i)
                     list.add(
-                        DeliveryMoveItem(
-                            productName = line.getString("product_name"),
-                            productUomQty = line.getDouble("product_uom_qty"),
-                            quantityDone = line.getDouble("quantity_done"),
-                            uomName = line.getString("uom_name"),
-                            lotName = line.getString("lot_name"),
+                        AssetMoveItem(
+                            asset = line.getString("asset_id"),
+                            category = line.getString("category"),
+                            heldBy = line.getString("held_by"),
+                            employee = line.getString("employee"),
                             rfid = line.getString("rfid"),
                         )
                     )
                 }
 
                 requireActivity().runOnUiThread {
-                    txtDeliveryName.text = "Delivery Number: ${pickingObj.getString("name")}"
-                    txtPartner.text = "Customer: ${pickingObj.getString("partner_name")}"
-                    txtScheduledDate.text = "Scheduled Date: ${pickingObj.getString("scheduled_date")}"
-                    txtOrigin.text = "Origin: ${pickingObj.optString("origin", "-")}"
-                    txtState.text = "State: ${pickingObj.getString("state")}"
+                    txtAssetName.text = "Asset Number: ${assetObj.getString("name")}"
+                    txtPartner.text = "Customer: ${assetObj.getString("partner_name")}"
+                    txtScheduledDate.text = "Scheduled Date: ${assetObj.getString("due_date")}"
+                    txtOrigin.text = "Origin: ${assetObj.optString("origin", "-")}"
+                    txtState.text = "State: ${assetObj.getString("state")}"
                     adapter.updateData(list)
                     progressBar.visibility = View.GONE
                 }
@@ -248,7 +245,7 @@ class DeliveryDetailFragment : Fragment() {
         })
     }
 
-    private fun handleDeliveryScanResult(rfids: List<String>) {
+    private fun handleAssetScanResult(rfids: List<String>) {
         if (rfids.isEmpty()) return
 
         // Set flag to refresh data when fragment resumes after scanning

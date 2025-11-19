@@ -7,7 +7,7 @@
 
     <!-- Loading Spinner -->
     <ProgressBar
-        android:id="@+id/progressBarReceiving"
+        android:id="@+id/progressBarAsset"
         style="?android:attr/progressBarStyleLarge"
         android:layout_width="60dp"
         android:layout_height="60dp"
@@ -17,14 +17,22 @@
 
     <!-- Content Layout -->
     <LinearLayout
-        android:id="@+id/contentLayoutReceiving"
+        android:id="@+id/contentLayoutAsset"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:padding="16dp"
         android:visibility="gone">
 
-        <!-- Header Card -->
+<!--        &lt;!&ndash; Header Card &ndash;&gt;-->
+<!--        <androidx.cardview.widget.CardView-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_marginBottom="12dp"-->
+<!--            android:backgroundTint="@android:color/white"-->
+<!--            android:padding="12dp"-->
+<!--            app:cardCornerRadius="16dp"-->
+<!--            app:cardElevation="3dp">-->
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -36,32 +44,39 @@
                     android:layout_width="28dp"
                     android:layout_height="28dp"
                     android:layout_marginEnd="8dp"
-                    android:contentDescription="Receiving Notes Icon"
+                    android:contentDescription="Asset Order Icon"
                     android:src="@drawable/inventory_icon"
                     app:tint="#4A90E2" />
 
                 <TextView
-                    android:id="@+id/textViewTitleReceiving"
+                    android:id="@+id/textViewTitleAsset"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:letterSpacing="0.02"
-                    android:text="Receiving Notes"
+                    android:text="Asset Order"
                     android:textColor="#1E1E1E"
-
                     android:textSize="20sp"
-                    android:textStyle="bold" />
+                    android:textStyle="bold"
+                    android:letterSpacing="0.02" />
             </LinearLayout>
 <!--        </androidx.cardview.widget.CardView>-->
 
-        <!-- RecyclerView Container -->
+<!--        &lt;!&ndash; RecyclerView Container &ndash;&gt;-->
+<!--        <androidx.cardview.widget.CardView-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="0dp"-->
+<!--            android:layout_weight="1"-->
+<!--            android:backgroundTint="@android:color/white"-->
+<!--            app:cardCornerRadius="16dp"-->
+<!--            app:cardElevation="1dp">-->
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerViewReceiving"
+            android:id="@+id/recyclerViewAsset"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:padding="12dp"
             android:scrollbars="vertical" />
+<!--        </androidx.cardview.widget.CardView>-->
 
     </LinearLayout>
 
