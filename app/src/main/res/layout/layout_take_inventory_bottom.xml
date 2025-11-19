@@ -187,5 +187,21 @@
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <TextView
+            android:id="@+id/start_process_asset"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:gravity="center"
+            android:background="@color/blue_primary"
+            android:onClick="@{()->vm.onAssetProcessClick()}"
+            android:text="Process Asset"
+            android:textColor="@color/white"
+            android:textSize="@dimen/sunmi_32ps"
+            android:visibility="@{vm.assetVisible &amp;&amp; vm.editEnExport ? View.VISIBLE : View.GONE}"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

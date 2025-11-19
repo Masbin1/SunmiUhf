@@ -172,6 +172,8 @@ object EventConstant {
 
     const val EVENT_DELIVERY_PROCESS = 1201
 
+    const val EVENT_ASSET_PROCESS = 1202
+
     /** 频率设置 - 频点间隔 */
     const val EVENT_FQ_INTERVAL = 1036
 

@@ -62,6 +62,8 @@ class TakeInventoryModel : BaseViewModel() {
     val receivingRfid = MutableLiveData<String>()
     val deliveryVisible = MutableLiveData<Boolean>(false)
 
+    val assetVisible = MutableLiveData<Boolean>(false)
+
     /**
      * 返回点击事件
      */
@@ -165,6 +167,11 @@ class TakeInventoryModel : BaseViewModel() {
     fun onDeliveryProcessClick() {
         EventConstant.EVENT_DELIVERY_PROCESS.publish()
     }
+
+    fun onAssetProcessClick() {
+        EventConstant.EVENT_ASSET_PROCESS.publish()
+    }
+
 
     /**
      * 导出Excel

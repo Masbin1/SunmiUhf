@@ -158,6 +158,15 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         } ?: run {
             vm.deliveryVisible.value = false
         }
+
+
+        assetId?.let {
+            vm.assetVisible.value = true
+            vm.editModel.value = true
+        } ?: run {
+            vm.assetVisible.value = false
+        }
+
         adapter.setNewInstance(list)
         vm.topSearchEn.value = !list.isNullOrEmpty()
         vm.start.observe(viewLifecycleOwner, Observer { startStop(it) })
@@ -278,6 +287,9 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
             EventConstant.EVENT_DELIVERY_PROCESS -> {
                 processDeliverySelection()
             }
+            EventConstant.EVENT_ASSET_PROCESS -> {
+                processAssetSelection()
+            }
             EventConstant.EVENT_TAKE_LABEL_INFO -> {
 
             }
@@ -330,6 +342,18 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         }
         // Query server for product info for each RFID
         checkRfidsAndCreateMoves(item, rfids)
+    }
+
+
+    private fun processAssetSelection() {
+        val item = assetId ?: return
+        val rfids = tidList.toList() // Get all scanned RFIDs
+        if (rfids.isEmpty()) {
+            mainScope.launch { showShort(getString(R.string.please_take_inventory_before_proceeding)) }
+            return
+        }
+        // Query server for product info for each RFID
+        checkRfidsAndAsset(item, rfids)
     }
 
     private fun checkRfidsAndCreateMoves(pickingId: Int, rfids: List<String>) {
@@ -476,6 +500,150 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
             }
         })
     }
+
+
+    private fun checkRfidsAndAsset(assetId: Int, rfids: List<String>) {
+        val client = OkHttpClient()
+        val jsonBody = JSONObject().apply {
+            put("rfids", JSONArray(rfids))
+        }
+        val requestBody = RequestBody.create(
+            "application/json".toMediaType(),
+            jsonBody.toString()
+        )
+        val request = Request.Builder()
+            .url("${BuildConfig.SERVER_URL}/check/asset/rfid")
+            .post(requestBody)
+            .addHeader("Content-Type", "application/json")
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                mainScope.launch {
+                    showShort("Failed to check RFIDs: ${e.message}")
+                }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val body = response.body?.string()
+                if (response.isSuccessful && body != null) {
+                    try {
+                        val jsonResponse = JSONObject(body)
+
+                        // Jika Odoo mengembalikan JSON-RPC wrapper, ambil objek result
+                        val payload = if (jsonResponse.has("result")) {
+                            jsonResponse.getJSONObject("result")
+                        } else {
+                            jsonResponse
+                        }
+
+                        // Ambil success dengan aman
+                        val success = payload.optBoolean("success", false)
+                        if (success) {
+                            val results = payload.optJSONArray("results") ?: JSONArray()
+                            val validRfids = mutableListOf<String>()
+                            val pendingMoves = AtomicInteger(0)
+
+                            for (i in 0 until results.length()) {
+                                val result = results.optJSONObject(i) ?: continue
+                                val rfid = result.optString("rfid", "")
+                                val productAssetId = result.optInt("id", -1)
+                                val status = result.optString("status", "")
+
+                                if (status == "found" && productAssetId != -1) {
+                                    validRfids.add(rfid)
+                                    pendingMoves.incrementAndGet()
+                                    // panggil fungsi createStockMove di background / worker — sesuai implementasimu
+                                    createAsset(assetId, productAssetId, rfid) {
+                                        if (pendingMoves.decrementAndGet() == 0) {
+                                            mainScope.launch { performBackClick() }
+                                        }
+                                    }
+                                }
+                            }
+
+                            mainScope.launch {
+                                if (validRfids.isNotEmpty()) {
+                                    showShort("Processed ${validRfids.size} valid RFIDs")
+                                    assetScanResultListener?.invoke(validRfids)
+                                } else {
+                                    showShort("No valid RFIDs found")
+                                    performBackClick()
+                                }
+                            }
+                        } else {
+                            val error = payload.optString("error", "Unknown error")
+                            mainScope.launch {
+                                showShort("Check RFID failed: $error")
+                                performBackClick()
+                            }
+                        }
+                    } catch (e: Exception) {
+                        mainScope.launch {
+                            showShort("Error parsing response: ${e.message}")
+                            performBackClick()
+                        }
+                    }
+                } else {
+                    mainScope.launch {
+                        showShort("Server error: ${response.code}")
+                        performBackClick()
+                    }
+                }
+            }
+        })
+    }
+
+    private fun createAsset(assetId: Int, productAssetId: Int, rfid: String, onComplete: (() -> Unit)? = null) {
+        val client = OkHttpClient()
+        val jsonBody = JSONObject().apply {
+            put("asset_id", assetId)
+            put("product_asset_id", productAssetId)
+            put("rfid", rfid)
+        }
+        val requestBody = RequestBody.create(
+            "application/json".toMediaType(),
+            jsonBody.toString()
+        )
+        val request = Request.Builder()
+            .url("${BuildConfig.SERVER_URL}/create/asset/line")
+            .post(requestBody)
+            .addHeader("Content-Type", "application/json")
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                // Log error, but don't show to user as it's async
+                LogUtils.e("createAssetLine", "Failed: ${e.message}")
+                onComplete?.invoke()
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val body = response.body?.string()
+                if (response.isSuccessful && body != null) {
+                    try {
+                        val jsonResponse = JSONObject(body)
+                        val success = jsonResponse.getBoolean("success")
+                        if (!success) {
+                            val error = jsonResponse.optString("error", "Unknown error")
+                            LogUtils.e("createAssetLine", "Failed: $error")
+                        } else {
+                            val message = jsonResponse.optString("message", "Asset line created")
+                            LogUtils.d("createAssetLine", message)
+                        }
+                    } catch (e: Exception) {
+                        LogUtils.e("createAssetLine", "Error parsing response: ${e.message}")
+                    }
+                } else {
+                    LogUtils.e("createAssetLine", "Server error: ${response.code}")
+                }
+                onComplete?.invoke()
+            }
+        })
+    }
+
+
+
 
     /**
      * 弹出显示 盘存模式列表
