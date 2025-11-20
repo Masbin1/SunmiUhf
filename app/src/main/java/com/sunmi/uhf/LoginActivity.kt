@@ -22,6 +22,8 @@ class LoginActivity : BaseActivity<ActivityLoginBinding>() {
     }
 
     override fun initView() {
+        checkExistingSession()
+        
         binding.btnFetchDatabases.setOnClickListener {
             val url = binding.etProjectUrl.text.toString().trim()
             if (url.isEmpty()) {
@@ -33,6 +35,15 @@ class LoginActivity : BaseActivity<ActivityLoginBinding>() {
 
         binding.btnLogin.setOnClickListener {
             performLogin()
+        }
+    }
+
+    private fun checkExistingSession() {
+        val pref = App.getPref()
+        val isLoggedIn = pref.getParam("is_logged_in", false)
+        
+        if (isLoggedIn) {
+            navigateToMainActivity()
         }
     }
 

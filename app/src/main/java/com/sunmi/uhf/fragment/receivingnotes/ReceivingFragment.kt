@@ -14,6 +14,7 @@ import com.sunmi.uhf.BuildConfig
 import com.sunmi.uhf.R
 import com.sunmi.uhf.base.BaseActivity
 import com.sunmi.uhf.utils.AuthUtils
+import com.sunmi.uhf.service.OdooApiClient
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
@@ -53,10 +54,7 @@ class ReceivingFragment : Fragment() {
 
     private fun loadReceivingNotes() {
         progressBar.visibility = View.VISIBLE
-        val client = OkHttpClient.Builder()
-            .retryOnConnectionFailure(true)
-            .build()
-
+        val client = OdooApiClient.getClient()
         val request = Request.Builder()
             .url("${AuthUtils.getServerUrl()}/get/stock/picking/receiving")
             .build()

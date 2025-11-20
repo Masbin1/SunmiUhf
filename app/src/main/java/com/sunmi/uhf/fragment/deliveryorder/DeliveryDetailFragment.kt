@@ -16,6 +16,7 @@ import android.widget.Toast
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.sunmi.uhf.fragment.takeinventory.TakeInventoryFragment
 import com.sunmi.uhf.utils.AuthUtils
+import com.sunmi.uhf.service.OdooApiClient
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
@@ -150,7 +151,7 @@ class DeliveryDetailFragment : Fragment() {
     private fun loadMoveLines() {
         progressBar.visibility = View.VISIBLE
         progressBarMoveLines.visibility = View.VISIBLE
-        val client = OkHttpClient()
+        val client = OdooApiClient.getClient()
 
         val request = Request.Builder()
             .url("${AuthUtils.getServerUrl()}/get/stock/picking/delivery/detail/$deliveryId")
@@ -200,7 +201,7 @@ class DeliveryDetailFragment : Fragment() {
 
     private fun loadDeliveryDetail() {
         progressBar.visibility = View.VISIBLE
-        val client = OkHttpClient()
+        val client = OdooApiClient.getClient()
 
         val request = Request.Builder()
             .url("${AuthUtils.getServerUrl()}/get/stock/picking/delivery/detail/$deliveryId")

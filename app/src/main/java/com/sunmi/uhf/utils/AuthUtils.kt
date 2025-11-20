@@ -24,7 +24,7 @@ object AuthUtils {
     fun getLoginInfo(): Map<String, String> {
         val pref = App.getPref()
         return mapOf(
-            "uid" to pref.getParam("login_uid", "").toString(),
+            "uid" to pref.getParam("login_uid", 0).toString(),
             "sessionId" to (pref.getParam("login_session_id", "") ?: ""),
             "database" to (pref.getParam("login_database", "") ?: ""),
             "username" to (pref.getParam("login_username", "") ?: ""),

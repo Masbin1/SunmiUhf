@@ -15,6 +15,7 @@ import com.sunmi.uhf.R
 import com.sunmi.uhf.base.BaseActivity
 import com.sunmi.uhf.fragment.operation.LabelOperationFragment
 import com.sunmi.uhf.utils.AuthUtils
+import com.sunmi.uhf.service.OdooApiClient
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
@@ -55,9 +56,7 @@ class DeliveryFragment : Fragment() {
 
     private fun loadDeliveryOrders() {
         progressBar.visibility = View.VISIBLE
-        val client = OkHttpClient.Builder()
-            .retryOnConnectionFailure(true)
-            .build()
+        val client = OdooApiClient.getClient()
 
         val request = Request.Builder()
             .url("${AuthUtils.getServerUrl()}/get/stock/picking/delivery")

@@ -37,6 +37,7 @@ import com.sunmi.uhf.fragment.ReadBaseFragment
 import com.sunmi.uhf.fragment.deliveryorder.DeliveryMoveItem
 import com.sunmi.uhf.fragment.receivingnotes.ReceivingMoveItem
 import com.sunmi.uhf.utils.*
+import com.sunmi.uhf.service.OdooApiClient
 import com.sunmi.uhf.view.RecycleDivider
 import com.sunmi.widget.dialog.InputDialog
 import kotlinx.coroutines.Dispatchers
@@ -357,7 +358,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     }
 
     private fun checkRfidsAndCreateMoves(pickingId: Int, rfids: List<String>) {
-        val client = OkHttpClient()
+        val client = OdooApiClient.getClient()
         val jsonBody = JSONObject().apply {
             put("rfids", JSONArray(rfids))
         }
@@ -450,7 +451,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     }
 
     private fun createStockMove(pickingId: Int, productId: Int, lotId: Int?, rfid: String, onComplete: (() -> Unit)? = null) {
-        val client = OkHttpClient()
+        val client = OdooApiClient.getClient()
         val jsonBody = JSONObject().apply {
             put("picking_id", pickingId)
             put("product_id", productId)
@@ -503,7 +504,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
 
 
     private fun checkRfidsAndAsset(assetId: Int, rfids: List<String>) {
-        val client = OkHttpClient()
+        val client = OdooApiClient.getClient()
         val jsonBody = JSONObject().apply {
             put("rfids", JSONArray(rfids))
         }
@@ -595,7 +596,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     }
 
     private fun createAsset(assetId: Int, productAssetId: Int, rfid: String, onComplete: (() -> Unit)? = null) {
-        val client = OkHttpClient()
+        val client = OdooApiClient.getClient()
         val jsonBody = JSONObject().apply {
             put("asset_id", assetId)
             put("product_asset_id", productAssetId)

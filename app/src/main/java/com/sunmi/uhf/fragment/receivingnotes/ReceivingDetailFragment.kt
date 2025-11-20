@@ -13,6 +13,7 @@ import com.sunmi.uhf.R
 import com.sunmi.uhf.base.BaseActivity
 import com.sunmi.uhf.fragment.takeinventory.TakeInventoryFragment
 import com.sunmi.uhf.utils.AuthUtils
+import com.sunmi.uhf.service.OdooApiClient
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import org.json.JSONArray
@@ -146,7 +147,7 @@ class ReceivingDetailFragment : Fragment() {
 
         progressBar.visibility = View.VISIBLE
 
-        val client = OkHttpClient()
+        val client = OdooApiClient.getClient()
 
         // JSON body untuk dikirim ke Odoo
         val jsonBody = JSONObject().apply {
@@ -198,7 +199,7 @@ class ReceivingDetailFragment : Fragment() {
         progressBar.visibility = View.VISIBLE
         progressBarMoveLines.visibility = View.VISIBLE
 
-        val client = OkHttpClient()
+        val client = OdooApiClient.getClient()
         val request = Request.Builder()
             .url("${AuthUtils.getServerUrl()}/get/stock/picking/receiving/detail/$receivingId")
             .build()
@@ -264,7 +265,7 @@ class ReceivingDetailFragment : Fragment() {
     private fun loadReceivingDetail() {
         progressBar.visibility = View.VISIBLE
 
-        val client = OkHttpClient()
+        val client = OdooApiClient.getClient()
         val request = Request.Builder()
             .url("${AuthUtils.getServerUrl()}/get/stock/picking/receiving/detail/$receivingId")
             .build()
