@@ -37,16 +37,23 @@ class OdooAuthService {
             val client = XmlRpcClient()
             client.setConfig(config)
             
+            val userAgentEnv = mapOf(
+                "user_agent" to "SunmiUHF/1.0",
+                "type" to "mobile"
+            )
+            
             val params = arrayOf(
                 request.database,
                 request.username,
-                request.password
+                request.password,
+                userAgentEnv
             )
             
             val result = client.execute("authenticate", params)
             val uid = when (result) {
                 is Int -> result
                 is Double -> result.toInt()
+                is Long -> result.toInt()
                 else -> throw Exception("Authentication failed: Invalid response type")
             }
             
