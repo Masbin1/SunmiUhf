@@ -36,10 +36,6 @@ class AssetDetailFragment : Fragment() {
     private lateinit var txtState: TextView
     private var shouldRefreshOnResume = false
 
-    private lateinit var btnSave: FloatingActionButton
-
-
-
     companion object {
         fun newInstance(id: Int): AssetDetailFragment {
             val fragment = AssetDetailFragment()
