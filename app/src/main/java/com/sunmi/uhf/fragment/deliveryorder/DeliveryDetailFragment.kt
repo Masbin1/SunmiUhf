@@ -15,6 +15,7 @@ import com.sunmi.uhf.R
 import android.widget.Toast
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.sunmi.uhf.fragment.takeinventory.TakeInventoryFragment
+import com.sunmi.uhf.utils.AuthUtils
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
@@ -152,7 +153,7 @@ class DeliveryDetailFragment : Fragment() {
         val client = OkHttpClient()
 
         val request = Request.Builder()
-            .url("${BuildConfig.SERVER_URL}/get/stock/picking/delivery/detail/$deliveryId")
+            .url("${AuthUtils.getServerUrl()}/get/stock/picking/delivery/detail/$deliveryId")
             .build()
 
         client.newCall(request).enqueue(object : Callback {
@@ -202,7 +203,7 @@ class DeliveryDetailFragment : Fragment() {
         val client = OkHttpClient()
 
         val request = Request.Builder()
-            .url("${BuildConfig.SERVER_URL}/get/stock/picking/delivery/detail/$deliveryId")
+            .url("${AuthUtils.getServerUrl()}/get/stock/picking/delivery/detail/$deliveryId")
             .build()
 
         client.newCall(request).enqueue(object : Callback {

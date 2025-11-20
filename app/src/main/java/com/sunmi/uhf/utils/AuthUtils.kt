@@ -2,6 +2,7 @@ package com.sunmi.uhf.utils
 
 import android.content.Intent
 import com.sunmi.uhf.App
+import com.sunmi.uhf.BuildConfig
 import com.sunmi.uhf.LoginActivity
 
 object AuthUtils {
@@ -29,6 +30,26 @@ object AuthUtils {
             "username" to (pref.getParam("login_username", "") ?: ""),
             "url" to (pref.getParam("login_url", "") ?: "")
         )
+    }
+
+    fun getApiBaseUrl(): String {
+        val pref = App.getPref()
+        val savedUrl = pref.getParam("login_url", "")
+        return if (savedUrl.isNotEmpty()) {
+            "$savedUrl/api"
+        } else {
+            "${BuildConfig.SERVER_URL}/api"
+        }
+    }
+
+    fun getServerUrl(): String {
+        val pref = App.getPref()
+        val savedUrl = pref.getParam("login_url", "")
+        return if (savedUrl.isNotEmpty()) {
+            savedUrl
+        } else {
+            BuildConfig.SERVER_URL
+        }
     }
 
     fun goToLoginActivity() {

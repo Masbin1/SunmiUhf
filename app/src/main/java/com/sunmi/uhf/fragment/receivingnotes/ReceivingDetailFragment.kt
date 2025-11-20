@@ -12,6 +12,7 @@ import com.sunmi.uhf.BuildConfig
 import com.sunmi.uhf.R
 import com.sunmi.uhf.base.BaseActivity
 import com.sunmi.uhf.fragment.takeinventory.TakeInventoryFragment
+import com.sunmi.uhf.utils.AuthUtils
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import org.json.JSONArray
@@ -165,7 +166,7 @@ class ReceivingDetailFragment : Fragment() {
         )
 
         val request = Request.Builder()
-            .url("${BuildConfig.SERVER_URL}/update/receiving/rfid")
+            .url("${AuthUtils.getServerUrl()}/update/receiving/rfid")
             .post(requestBody)
             .addHeader("Content-Type", "application/json")
             .build()
@@ -199,7 +200,7 @@ class ReceivingDetailFragment : Fragment() {
 
         val client = OkHttpClient()
         val request = Request.Builder()
-            .url("${BuildConfig.SERVER_URL}/get/stock/picking/receiving/detail/$receivingId")
+            .url("${AuthUtils.getServerUrl()}/get/stock/picking/receiving/detail/$receivingId")
             .build()
 
         client.newCall(request).enqueue(object : Callback {
@@ -265,7 +266,7 @@ class ReceivingDetailFragment : Fragment() {
 
         val client = OkHttpClient()
         val request = Request.Builder()
-            .url("${BuildConfig.SERVER_URL}/get/stock/picking/receiving/detail/$receivingId")
+            .url("${AuthUtils.getServerUrl()}/get/stock/picking/receiving/detail/$receivingId")
             .build()
 
         client.newCall(request).enqueue(object : Callback {

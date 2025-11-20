@@ -14,6 +14,7 @@ import com.sunmi.uhf.BuildConfig
 import com.sunmi.uhf.R
 import com.sunmi.uhf.base.BaseActivity
 import com.sunmi.uhf.fragment.operation.LabelOperationFragment
+import com.sunmi.uhf.utils.AuthUtils
 import okhttp3.*
 import org.json.JSONObject
 import java.io.IOException
@@ -59,7 +60,7 @@ class DeliveryFragment : Fragment() {
             .build()
 
         val request = Request.Builder()
-            .url("${BuildConfig.SERVER_URL}/get/stock/picking/delivery")
+            .url("${AuthUtils.getServerUrl()}/get/stock/picking/delivery")
             .build()
 
         client.newCall(request).enqueue(object : Callback {
