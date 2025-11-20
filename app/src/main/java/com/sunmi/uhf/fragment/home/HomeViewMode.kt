@@ -2,8 +2,10 @@ package com.sunmi.uhf.fragment.home
 
 
 import androidx.lifecycle.MutableLiveData
+import com.sunmi.uhf.App
 import com.sunmi.uhf.base.BaseViewModel
 import com.sunmi.uhf.constants.EventConstant
+import com.sunmi.uhf.utils.AuthUtils
 
 /**
  * @ClassName: HomeViewMode
@@ -69,6 +71,10 @@ class HomeViewMode : BaseViewModel() {
      */
     fun onSettingClick() {
         EventConstant.EVENT_SETTING.publish()
+    }
+
+    fun onLogoutClick() {
+        AuthUtils.goToLoginActivity()
     }
 
 }

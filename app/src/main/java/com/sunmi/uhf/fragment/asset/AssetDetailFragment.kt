@@ -34,12 +34,11 @@ class AssetDetailFragment : Fragment() {
     private lateinit var txtScheduledDate: TextView
     private lateinit var txtOrigin: TextView
     private lateinit var txtState: TextView
+    private var shouldRefreshOnResume = false
 
-    // Floating Buttons
-    private lateinit var btnScan: FloatingActionButton
     private lateinit var btnSave: FloatingActionButton
 
-    private var shouldRefreshOnResume = false
+
 
     companion object {
         fun newInstance(id: Int): AssetDetailFragment {
@@ -66,6 +65,7 @@ class AssetDetailFragment : Fragment() {
         assetItem = arguments?.getParcelable("asset_item")
     }
 
+    @SuppressLint("MissingInflatedId")
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -88,36 +88,12 @@ class AssetDetailFragment : Fragment() {
         }
 
         // Init Floating Buttons
-        btnScan = view.findViewById(R.id.btnScan)
-        btnSave = view.findViewById(R.id.btnSave)
 
         // RecyclerView
         adapter = AssetMoveAdapter(emptyList())
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
         recyclerView.adapter = adapter
 
-        // Button Scan
-        btnScan.setOnClickListener {
-            val args = Bundle().apply {
-                putInt(TakeInventoryFragment.ARC_KEY_ASSET_ID, assetId)
-            }
-
-            val fragment = TakeInventoryFragment.newInstance(args)
-            fragment.setAssetScanResultListener { rfids ->
-                handleAssetScanResult(rfids)
-            }
-
-            (activity as? com.sunmi.uhf.base.BaseActivity<*>)?.switchFragment(
-                fragment,
-                addToBackStack = true,
-                clearStack = false
-            )
-        }
-
-        // Button Save
-        btnSave.setOnClickListener {
-            Toast.makeText(requireContext(), "Save clicked", Toast.LENGTH_SHORT).show()
-        }
 
         if (assetItem != null) {
             displayHeaderImmediately()
@@ -139,8 +115,8 @@ class AssetDetailFragment : Fragment() {
     @SuppressLint("SetTextI18n")
     private fun displayHeaderImmediately() {
         assetItem?.let {
-            txtAssetName.text = "Asset Number: ${it.name}"
-            txtPartner.text = "Customer: ${it.partnerName}"
+            txtAssetName.text = "Employee Asset Transfer: ${it.name}"
+//            txtPartner.text = "Customer: ${it.partnerName}"
             txtScheduledDate.text = "Scheduled Date: ${it.dueDate}"
             txtOrigin.text = "Origin: -"
             txtState.text = "State: ${it.state}"
@@ -235,8 +211,8 @@ class AssetDetailFragment : Fragment() {
                 }
 
                 requireActivity().runOnUiThread {
-                    txtAssetName.text = "Asset Number: ${assetObj.getString("name")}"
-                    txtPartner.text = "Customer: ${assetObj.getString("partner_name")}"
+                    txtAssetName.text = "Employee Asset Transfer: ${assetObj.getString("name")}"
+//                    txtPartner.text = "Customer: ${assetObj.getString("partner_name")}"
                     txtScheduledDate.text = "Scheduled Date: ${assetObj.getString("due_date")}"
                     txtOrigin.text = "Origin: ${assetObj.optString("origin", "-")}"
                     txtState.text = "State: ${assetObj.getString("state")}"
@@ -247,12 +223,4 @@ class AssetDetailFragment : Fragment() {
         })
     }
 
-    private fun handleAssetScanResult(rfids: List<String>) {
-        if (rfids.isEmpty()) return
-
-        // Set flag to refresh data when fragment resumes after scanning
-        shouldRefreshOnResume = true
-
-        Toast.makeText(requireContext(), "Processed ${rfids.size} RFIDs successfully", Toast.LENGTH_SHORT).show()
-    }
 }

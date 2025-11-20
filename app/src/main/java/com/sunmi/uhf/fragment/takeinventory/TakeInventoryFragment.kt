@@ -65,6 +65,8 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     private var pickingId: Int? = null
 
     private var assetId: Int? = null
+    private var selectedUserId: Int? = null
+    private var selectedUserName: String? = null
     private var deliveryScanResultListener: ((List<String>) -> Unit)? = null
 
     private var assetScanResultListener: ((List<String>) -> Unit)? = null
@@ -113,6 +115,8 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         receivingItem = arguments?.getSerializable(ARG_KEY_RECEIVING_ITEM) as? ReceivingMoveItem
         pickingId = arguments?.getInt(ARG_KEY_PICKING_ID)
         assetId = arguments?.getInt(ARC_KEY_ASSET_ID)
+        selectedUserId = arguments?.getInt("selected_user_id")
+        selectedUserName = arguments?.getString("selected_user_name")
     }
 
     override fun initVM() {
@@ -347,14 +351,13 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
 
 
     private fun processAssetSelection() {
-        val item = assetId ?: return
         val rfids = tidList.toList() // Get all scanned RFIDs
         if (rfids.isEmpty()) {
             mainScope.launch { showShort(getString(R.string.please_take_inventory_before_proceeding)) }
             return
         }
         // Query server for product info for each RFID
-        checkRfidsAndAsset(item, rfids)
+        checkRfidsAndAsset(rfids)
     }
 
     private fun checkRfidsAndCreateMoves(pickingId: Int, rfids: List<String>) {
@@ -503,7 +506,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     }
 
 
-    private fun checkRfidsAndAsset(assetId: Int, rfids: List<String>) {
+    private fun checkRfidsAndAsset(rfids: List<String>) {
         val client = OdooApiClient.getClient()
         val jsonBody = JSONObject().apply {
             put("rfids", JSONArray(rfids))
@@ -543,7 +546,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                         if (success) {
                             val results = payload.optJSONArray("results") ?: JSONArray()
                             val validRfids = mutableListOf<String>()
-                            val pendingMoves = AtomicInteger(0)
+                            val productAssetIds = mutableListOf<Int>()
 
                             for (i in 0 until results.length()) {
                                 val result = results.optJSONObject(i) ?: continue
@@ -553,21 +556,20 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
 
                                 if (status == "found" && productAssetId != -1) {
                                     validRfids.add(rfid)
-                                    pendingMoves.incrementAndGet()
-                                    // panggil fungsi createStockMove di background / worker — sesuai implementasimu
-                                    createAsset(assetId, productAssetId, rfid) {
-                                        if (pendingMoves.decrementAndGet() == 0) {
-                                            mainScope.launch { performBackClick() }
-                                        }
-                                    }
+                                    productAssetIds.add(productAssetId)
                                 }
                             }
 
-                            mainScope.launch {
-                                if (validRfids.isNotEmpty()) {
-                                    showShort("Processed ${validRfids.size} valid RFIDs")
-                                    assetScanResultListener?.invoke(validRfids)
-                                } else {
+                            if (validRfids.isNotEmpty()) {
+                                createAsset(productAssetIds, validRfids, selectedUserId, selectedUserName) {
+                                    mainScope.launch {
+                                        showShort("Processed ${validRfids.size} valid RFIDs")
+                                        assetScanResultListener?.invoke(validRfids)
+                                        performBackClick()
+                                    }
+                                }
+                            } else {
+                                mainScope.launch {
                                     showShort("No valid RFIDs found")
                                     performBackClick()
                                 }
@@ -595,12 +597,18 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         })
     }
 
-    private fun createAsset(assetId: Int, productAssetId: Int, rfid: String, onComplete: (() -> Unit)? = null) {
+    private fun createAsset(productAssetIds: List<Int>, rfids: List<String>, userId: Int?, userName: String?, onComplete: (() -> Unit)? = null) {
         val client = OdooApiClient.getClient()
         val jsonBody = JSONObject().apply {
             put("asset_id", assetId)
-            put("product_asset_id", productAssetId)
-            put("rfid", rfid)
+            put("product_asset_ids", JSONArray(productAssetIds))
+            put("rfids", JSONArray(rfids))
+            if (userId != null) {
+                put("user_id", userId)
+            }
+            if (!userName.isNullOrEmpty()) {
+                put("user_name", userName)
+            }
         }
         val requestBody = RequestBody.create(
             "application/json".toMediaType(),
@@ -615,7 +623,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         client.newCall(request).enqueue(object : Callback {
             override fun onFailure(call: Call, e: IOException) {
                 // Log error, but don't show to user as it's async
-                LogUtils.e("createAssetLine", "Failed: ${e.message}")
+                LogUtils.e("CreateAsset", "Failed: ${e.message}")
                 onComplete?.invoke()
             }
 
@@ -627,16 +635,16 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                         val success = jsonResponse.getBoolean("success")
                         if (!success) {
                             val error = jsonResponse.optString("error", "Unknown error")
-                            LogUtils.e("createAssetLine", "Failed: $error")
+                            LogUtils.e("CreateAsset", "Failed: $error")
                         } else {
                             val message = jsonResponse.optString("message", "Asset line created")
-                            LogUtils.d("createAssetLine", message)
+                            LogUtils.d("CreateAsset", message)
                         }
                     } catch (e: Exception) {
-                        LogUtils.e("createAssetLine", "Error parsing response: ${e.message}")
+                        LogUtils.e("CreateAsset", "Error parsing response: ${e.message}")
                     }
                 } else {
-                    LogUtils.e("createAssetLine", "Server error: ${response.code}")
+                    LogUtils.e("CreateAsset", "Server error: ${response.code}")
                 }
                 onComplete?.invoke()
             }
