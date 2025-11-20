@@ -18,7 +18,7 @@
         android:theme="@style/AppTheme">
 
         <activity
-            android:name=".MainActivity"
+            android:name=".LoginActivity"
             android:configChanges="orientation|keyboard|keyboardHidden|mcc|mnc|screenSize|fontScale"
             android:resizeableActivity="false"
             android:windowSoftInputMode="adjustPan">
@@ -27,6 +27,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|keyboard|keyboardHidden|mcc|mnc|screenSize|fontScale"
+            android:resizeableActivity="false"
+            android:windowSoftInputMode="adjustPan" />
+
 
         <provider
             android:name="androidx.core.content.FileProvider"

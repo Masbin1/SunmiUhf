@@ -58,22 +58,16 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     }
 
     override fun initView() {
+        checkLoginStatus()
         StatusBar.setStatusBarBackgroundColor(window, ContextCompat.getColor(App.mContext, R.color.statusBarColor))
         StatusBar.setStatusBarTextColor(window, true)
         val dm = DisplayMetrics()
         windowManager.defaultDisplay.getMetrics(dm)
 
-        val density = dm.density // 屏幕密度（像素比例：0.75/1.0/1.5/2.0）
+        val density = dm.density
 
-        val densityDPI = dm.densityDpi // 屏幕密度（每寸像素：120/160/240/320）
+        val densityDPI = dm.densityDpi
 
-//        val xdpi = dm.xdpi
-//        val ydpi = dm.ydpi
-//
-//        Log.e(
-//            "  DisplayMetrics",
-//            "xdpi=" + xdpi.toString() + "; ydpi=" + ydpi
-//        )
         Log.e(
             "  DisplayMetrics",
             "density=$density; densityDPI=$densityDPI"
@@ -86,8 +80,18 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
             "  DisplayMetrics",
             "sw=${resources.displayMetrics.widthPixels}; sh=${resources.displayMetrics.heightPixels}"
         )
+    }
 
-
+    private fun checkLoginStatus() {
+        val pref = App.getPref()
+        val isLoggedIn = pref.getParam("is_logged_in", false)
+        
+        if (!isLoggedIn) {
+            val intent = Intent(this, LoginActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            finish()
+        }
     }
 
     override fun initData() {
