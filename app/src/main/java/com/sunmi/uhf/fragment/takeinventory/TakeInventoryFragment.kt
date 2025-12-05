@@ -1,6 +1,7 @@
 package com.sunmi.uhf.fragment.takeinventory
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -309,6 +310,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         vm.editEnExport.postValue(adapter.selectData.size > 0)
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private fun processReceivingSelection() {
         val item = receivingItem ?: return
         if (adapter.selectData.size == 0) {

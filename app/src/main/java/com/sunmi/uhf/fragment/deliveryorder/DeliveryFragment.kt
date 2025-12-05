@@ -8,6 +8,7 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.sunmi.uhf.BuildConfig
@@ -15,10 +16,10 @@ import com.sunmi.uhf.R
 import com.sunmi.uhf.base.BaseActivity
 import com.sunmi.uhf.fragment.operation.LabelOperationFragment
 import com.sunmi.uhf.utils.AuthUtils
+import com.sunmi.uhf.service.ApiHelper
 import com.sunmi.uhf.service.OdooApiClient
-import okhttp3.*
+import kotlinx.coroutines.launch
 import org.json.JSONObject
-import java.io.IOException
 
 class DeliveryFragment : Fragment() {
 
@@ -56,61 +57,42 @@ class DeliveryFragment : Fragment() {
 
     private fun loadDeliveryOrders() {
         progressBar.visibility = View.VISIBLE
-        val client = OdooApiClient.getClient()
+        lifecycleScope.launch {
+            try {
+                val jsonObject = ApiHelper.getJsonObject(
+                    "${AuthUtils.getServerUrl()}/get/stock/picking/delivery",
+                    useCache = true
+                )
+                
+                if (jsonObject.getString("status") == "success") {
+                    val jsonArray = jsonObject.getJSONArray("pickings")
+                    val deliveryList = mutableListOf<DeliveryItem>()
 
-        val request = Request.Builder()
-            .url("${AuthUtils.getServerUrl()}/get/stock/picking/delivery")
-            .build()
-
-        client.newCall(request).enqueue(object : Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                requireActivity().runOnUiThread {
-                    progressBar.visibility = View.GONE
-                    Toast.makeText(requireContext(), "Failed to load data: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-            }
-
-            override fun onResponse(call: Call, response: Response) {
-                val jsonData = response.body?.string() ?: return
-
-                try {
-                    val jsonObject = JSONObject(jsonData)
-                    if (jsonObject.getString("status") == "success") {
-                        val jsonArray = jsonObject.getJSONArray("pickings")
-                        val deliveryList = mutableListOf<DeliveryItem>()
-
-                        for (i in 0 until jsonArray.length()) {
-                            val obj = jsonArray.getJSONObject(i)
-                            deliveryList.add(
-                                DeliveryItem(
-                                    id = obj.getInt("id"),
-                                    name = obj.getString("name"),
-                                    scheduledDate = obj.getString("scheduled_date"),
-                                    partnerName = obj.optString("partner_name", "-"),
-                                    state = obj.getString("state")
-                                )
+                    for (i in 0 until jsonArray.length()) {
+                        val obj = jsonArray.getJSONObject(i)
+                        deliveryList.add(
+                            DeliveryItem(
+                                id = obj.getInt("id"),
+                                name = obj.getString("name"),
+                                scheduledDate = obj.getString("scheduled_date"),
+                                partnerName = obj.optString("partner_name", "-"),
+                                state = obj.getString("state")
                             )
-                        }
+                        )
+                    }
 
-                        requireActivity().runOnUiThread {
-                            progressBar.visibility = View.GONE
-                            contentLayout.visibility = View.VISIBLE
-                            adapter.updateData(deliveryList)
-                        }
-                    } else {
-                        requireActivity().runOnUiThread {
-                            progressBar.visibility = View.GONE
-                            Toast.makeText(requireContext(), "Failed: ${jsonObject.optString("message")}", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                } catch (e: Exception) {
-                    requireActivity().runOnUiThread {
-                        progressBar.visibility = View.GONE
-                        Toast.makeText(requireContext(), "Error parsing JSON: ${e.message}", Toast.LENGTH_LONG).show()
-                    }
+                    progressBar.visibility = View.GONE
+                    contentLayout.visibility = View.VISIBLE
+                    adapter.updateData(deliveryList)
+                } else {
+                    progressBar.visibility = View.GONE
+                    Toast.makeText(requireContext(), "Failed: ${jsonObject.optString("message")}", Toast.LENGTH_SHORT).show()
                 }
+            } catch (e: Exception) {
+                progressBar.visibility = View.GONE
+                Toast.makeText(requireContext(), "Error loading data: ${e.message}", Toast.LENGTH_LONG).show()
             }
-        })
+        }
     }
 
     companion object {

@@ -38,7 +38,7 @@ class OdooAuthService {
         return@withContext try {
             val cleanUrl = request.url.trim().removeSuffix("/")
             
-            val httpClient = OkHttpClient()
+            val httpClient = OdooApiClient.getClient()
             val loginUrl = "$cleanUrl/web/session/authenticate"
             
             val params = JSONObject().apply {
