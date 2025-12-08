@@ -141,45 +141,59 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
 
     override fun initData() {
         super.initData()
-        receivingItem?.let {
-            vm.receivingVisible.value = true
-            vm.receivingProduct.value = it.productName
-            vm.receivingLot.value = "Lot: ${if (it.lotName.isEmpty()) "-" else it.lotName}"
-            vm.receivingQty.value = "Qty: ${it.quantityDone}/${it.productUomQty}"
-            vm.receivingUom.value = "UoM: ${it.uomName}"
-            val currentRfid = when {
-                !it.pendingRfid.isNullOrEmpty() -> it.pendingRfid
-                it.rfid.isNotEmpty() -> it.rfid
-                else -> null
+        vm.editModel.value = false
+        when {
+            receivingItem != null -> {
+                val it = receivingItem!!
+                vm.receivingVisible.value = true
+                vm.deliveryVisible.value = false
+                vm.assetVisible.value = false
+
+                vm.receivingProduct.value = it.productName
+                vm.receivingLot.value = "Lot: ${if (it.lotName.isEmpty()) "-" else it.lotName}"
+                vm.receivingQty.value = "Qty: ${it.quantityDone}/${it.productUomQty}"
+                vm.receivingUom.value = "UoM: ${it.uomName}"
+
+                val currentRfid = when {
+                    !it.pendingRfid.isNullOrEmpty() -> it.pendingRfid
+                    it.rfid.isNotEmpty() -> it.rfid
+                    else -> null
+                }
+                vm.receivingRfid.value = currentRfid?.let { v -> "RFID: $v" } ?: "RFID: -"
+                vm.editModel.value = true
             }
-            vm.receivingRfid.value = currentRfid?.let { value -> "RFID: $value" } ?: "RFID: -"
-            vm.editModel.value = true
-        } ?: run {
-            vm.receivingVisible.value = false
-        }
 
-        pickingId?.let {
-            vm.deliveryVisible.value = true
-            vm.editModel.value = true
-        } ?: run {
-            vm.deliveryVisible.value = false
-        }
+            pickingId != null && pickingId != 0 -> {
+                vm.deliveryVisible.value = true
+                vm.receivingVisible.value = false
+                vm.assetVisible.value = false
+                vm.editModel.value = true
+            }
 
 
-        assetId?.let {
-            vm.assetVisible.value = true
-            vm.editModel.value = true
-        } ?: run {
-            vm.assetVisible.value = false
+            assetId != null -> {
+                vm.assetVisible.value = true
+                vm.deliveryVisible.value = false
+                vm.receivingVisible.value = false
+                vm.editModel.value = true
+            }
+
+            else -> {
+                // Kalau semuanya null
+                vm.receivingVisible.value = false
+                vm.deliveryVisible.value = false
+                vm.assetVisible.value = false
+                vm.editModel.value = false
+            }
         }
 
         adapter.setNewInstance(list)
         vm.topSearchEn.value = !list.isNullOrEmpty()
         vm.start.observe(viewLifecycleOwner, Observer { startStop(it) })
-        vm.editModel.observe(viewLifecycleOwner, Observer {
-            adapter.editable = it
-            adapter.notifyDataSetChanged()
-        })
+//        vm.editModel.observe(viewLifecycleOwner, Observer {
+//            adapter.editable = it
+//            adapter.notifyDataSetChanged()
+//        })
         vm.selectModel.observe(viewLifecycleOwner, Observer {
             modelAdapter?.selected = it
             modelAdapter?.notifyDataSetChanged()

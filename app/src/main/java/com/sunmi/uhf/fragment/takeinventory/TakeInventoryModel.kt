@@ -69,27 +69,12 @@ class TakeInventoryModel : BaseViewModel() {
      */
 
     fun showStartScan(): Boolean {
-        val receiving = receivingVisible.value ?: false
-        val delivery = deliveryVisible.value ?: false
         val edit = editModel.value ?: false
         val export = editEnExport.value ?: false
-
-        return !export && (
-                (receiving && edit) ||
-                        (delivery && edit) ||
-                        (!receiving && !delivery && !edit)
-                )
+        return !export && ((!edit) ||(edit))
     }
 
 
-
-    fun shouldShowReceiving(): Boolean {
-        return (receivingVisible.value ?: false) && (editEnExport.value ?: false)
-    }
-
-    fun shouldShowDelivery(): Boolean {
-        return (deliveryVisible.value ?: false) && (editEnExport.value ?: false)
-    }
 
     fun onBackClick() {
         EventConstant.EVENT_BACK.publish()

@@ -18,7 +18,7 @@ object OdooApiClient {
             instance = OkHttpClient.Builder()
                 .cookieJar(SimpleCookieJar(cookieStore))
                 .addInterceptor(OdooHttpInterceptor())
-                .addNetworkInterceptor(RetryInterceptor())
+                .addInterceptor(RetryInterceptor()) // uses the standalone RetryInterceptor.kt
                 .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .readTimeout(READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .writeTimeout(WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
@@ -50,29 +50,4 @@ class SimpleCookieJar(private val cookies: MutableList<Cookie>) : CookieJar {
     }
     
     private fun Long.isPast() = this < System.currentTimeMillis()
-}
-
-class RetryInterceptor(private val maxRetry: Int = 3) : okhttp3.Interceptor {
-    override fun intercept(chain: okhttp3.Interceptor.Chain): okhttp3.Response {
-        val request = chain.request()
-        var response: okhttp3.Response? = null
-        var exception: Exception? = null
-        
-        for (i in 0 until maxRetry) {
-            try {
-                response = chain.proceed(request)
-                if (response.isSuccessful) return response
-                if (!response.isSuccessful && response.code != 500) {
-                    return response
-                }
-                response.close()
-            } catch (e: Exception) {
-                exception = e
-                if (i == maxRetry - 1) throw e
-                Thread.sleep(100 * (i + 1).toLong())
-            }
-        }
-        
-        return response ?: throw exception ?: Exception("Max retries exceeded")
-    }
 }
