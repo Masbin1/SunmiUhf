@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.sunmi.uhf.R
 
 class DeliveryAdapter(
-    private var deliveryList: List<DeliveryItem>,
+    private var deliveryList: MutableList<DeliveryItem>,
     private val onItemClick: (DeliveryItem) -> Unit
 ) : RecyclerView.Adapter<DeliveryAdapter.ViewHolder>() {
 
@@ -38,8 +38,18 @@ class DeliveryAdapter(
         holder.card.setOnClickListener { onItemClick(item) }
     }
 
+    // Replace the whole dataset
     fun updateData(newList: List<DeliveryItem>) {
-        deliveryList = newList
+        deliveryList.clear()
+        deliveryList.addAll(newList)
         notifyDataSetChanged()
+    }
+
+    // Append a page of data
+    fun appendData(newList: List<DeliveryItem>) {
+        if (newList.isEmpty()) return
+        val start = deliveryList.size
+        deliveryList.addAll(newList)
+        notifyItemRangeInserted(start, newList.size)
     }
 }

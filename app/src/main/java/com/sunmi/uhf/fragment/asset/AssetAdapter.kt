@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.sunmi.uhf.R
 
 class AssetAdapter(
-    private var assetList: List<AssetItem>,
+    private var assetList: MutableList<AssetItem>,
     private val onItemClick: (AssetItem) -> Unit
 ) : RecyclerView.Adapter<AssetAdapter.ViewHolder>() {
 
@@ -38,8 +38,18 @@ class AssetAdapter(
         holder.card.setOnClickListener { onItemClick(item) }
     }
 
+    // Replace the whole dataset
     fun updateData(newList: List<AssetItem>) {
-        assetList = newList
+        assetList.clear()
+        assetList.addAll(newList)
         notifyDataSetChanged()
+    }
+
+    // Append page
+    fun appendData(newList: List<AssetItem>) {
+        if (newList.isEmpty()) return
+        val start = assetList.size
+        assetList.addAll(newList)
+        notifyItemRangeInserted(start, newList.size)
     }
 }

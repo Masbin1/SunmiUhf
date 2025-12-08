@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.sunmi.uhf.R
 
 class ReceivingAdapter(
-    private var receivingList: List<ReceivingItem>,
+    private var receivingList: MutableList<ReceivingItem>,
     private val onItemClick: (ReceivingItem) -> Unit
 ) : RecyclerView.Adapter<ReceivingAdapter.ViewHolder>() {
 
@@ -48,8 +48,18 @@ class ReceivingAdapter(
             .start()
     }
 
+    // Replace the whole dataset
     fun updateData(newList: List<ReceivingItem>) {
-        receivingList = newList
+        receivingList.clear()
+        receivingList.addAll(newList)
         notifyDataSetChanged()
+    }
+
+    // Append page
+    fun appendData(newList: List<ReceivingItem>) {
+        if (newList.isEmpty()) return
+        val start = receivingList.size
+        receivingList.addAll(newList)
+        notifyItemRangeInserted(start, newList.size)
     }
 }

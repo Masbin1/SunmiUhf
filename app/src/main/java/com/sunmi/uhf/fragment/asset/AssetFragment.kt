@@ -15,17 +15,13 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.sunmi.uhf.BuildConfig
 import com.sunmi.uhf.R
 import com.sunmi.uhf.base.BaseActivity
-import com.sunmi.uhf.fragment.operation.LabelOperationFragment
 import com.sunmi.uhf.fragment.takeinventory.TakeInventoryFragment
 import com.sunmi.uhf.utils.AuthUtils
 import com.sunmi.uhf.service.ApiHelper
-import com.sunmi.uhf.service.OdooApiClient
+import android.util.Log
 import kotlinx.coroutines.launch
-import org.json.JSONArray
-import org.json.JSONObject
 
 class AssetFragment : Fragment() {
 
@@ -40,6 +36,15 @@ class AssetFragment : Fragment() {
     private var selectedUserId: Int? = null
     private var selectedUserName: String? = null
 
+    // Pagination state
+    private var currentPage = 1
+    private val pageSize = 20
+    private var isLoading = false
+    private var isLastPage = false
+
+    // Track already seen item IDs to prevent duplicates when server returns repeated data
+    private val seenIds = mutableSetOf<Int>()
+
     @SuppressLint("MissingInflatedId")
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -51,7 +56,7 @@ class AssetFragment : Fragment() {
         contentLayout = view.findViewById(R.id.contentLayoutAsset)
         btnScan = view.findViewById(R.id.btnScan)
 
-        adapter = AssetAdapter(emptyList()) { item ->
+        adapter = AssetAdapter(mutableListOf()) { item ->
             val fragment = AssetDetailFragment.newInstance(item)
             (activity as? BaseActivity<*>)?.switchFragment(
                 fragment,
@@ -60,14 +65,36 @@ class AssetFragment : Fragment() {
             )
         }
 
-        recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        val layoutManager = LinearLayoutManager(requireContext())
+        recyclerView.layoutManager = layoutManager
         recyclerView.adapter = adapter
+
+        // pagination scroll listener
+        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(rv, dx, dy)
+                if (dy <= 0) return
+
+                val visibleItemCount = layoutManager.childCount
+                val totalItemCount = layoutManager.itemCount
+                val firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition()
+
+                if (!isLoading && !isLastPage) {
+                    if (visibleItemCount + firstVisibleItemPosition >= totalItemCount - 3
+                        && firstVisibleItemPosition >= 0
+                        && totalItemCount >= pageSize
+                    ) {
+                        loadAssetOrders(page = currentPage + 1)
+                    }
+                }
+            }
+        })
 
         btnScan.setOnClickListener {
             fetchAndShowUserDialog()
         }
 
-        loadAssetOrders()
+        loadAssetOrders(page = 1)
         return view
     }
 
@@ -75,7 +102,10 @@ class AssetFragment : Fragment() {
         super.onResume()
         if (shouldRefreshOnResume) {
             shouldRefreshOnResume = false
-            loadAssetOrders()
+            // reset paging to reload from first page
+            currentPage = 1
+            isLastPage = false
+            loadAssetOrders(page = 1)
         }
     }
 
@@ -87,7 +117,7 @@ class AssetFragment : Fragment() {
                     useCache = true,
                     arrayKey = "users"
                 )
-                
+
                 val userNames = mutableListOf<String>()
                 val userIds = mutableListOf<Int>()
 
@@ -131,24 +161,43 @@ class AssetFragment : Fragment() {
         )
     }
 
-    private fun loadAssetOrders() {
-        progressBar.visibility = View.VISIBLE
+    private fun loadAssetOrders(page: Int = 1) {
+        // show top progress only for first page
+        if (page == 1) {
+            progressBar.visibility = View.VISIBLE
+            contentLayout.visibility = View.GONE
+            // clear seen IDs when reloading first page
+            seenIds.clear()
+            isLastPage = false
+            currentPage = 1
+        } else {
+            progressBar.visibility = View.VISIBLE
+        }
+
+        isLoading = true
         lifecycleScope.launch {
             try {
+                val useCache = page == 1
+                val offset = (page - 1) * pageSize
+                val url = "${AuthUtils.getServerUrl()}/get/asset?offset=$offset&limit=$pageSize"
+                Log.d(TAG, "request url=$url useCache=$useCache page=$page offset=$offset")
                 val jsonObject = ApiHelper.getJsonObject(
-                    "${AuthUtils.getServerUrl()}/get/asset",
-                    useCache = true
+                    url,
+                    useCache = useCache
                 )
-                
+
                 if (jsonObject.getString("status") == "success") {
                     val jsonArray = jsonObject.getJSONArray("assets")
                     val AssetList = mutableListOf<AssetItem>()
 
                     for (i in 0 until jsonArray.length()) {
                         val obj = jsonArray.getJSONObject(i)
+                        val id = obj.getInt("id")
+                        if (seenIds.contains(id)) continue
+                        seenIds.add(id)
                         AssetList.add(
                             AssetItem(
-                                id = obj.getInt("id"),
+                                id = id,
                                 name = obj.getString("name"),
                                 dueDate = obj.getString("due_date"),
                                 partnerName = obj.optString("partner_name", "-"),
@@ -156,29 +205,53 @@ class AssetFragment : Fragment() {
                             )
                         )
                     }
+                    Log.d(TAG, "fetched total=${jsonArray.length()} new=${AssetList.size} seenTotal=${seenIds.size}")
 
                     progressBar.visibility = View.GONE
                     contentLayout.visibility = View.VISIBLE
-                    adapter.updateData(AssetList)
+
+                    // if no new items were returned for this page, treat as last page
+                    if (AssetList.isEmpty() && page > 1) {
+                        isLastPage = true
+                        isLoading = false
+                        return@launch
+                    }
+
+                    if (page == 1) {
+                        adapter.updateData(AssetList)
+                    } else {
+                        adapter.appendData(AssetList)
+                    }
+
+                    isLoading = false
+                    if (AssetList.size < pageSize) {
+                        isLastPage = true
+                    } else {
+                        currentPage = page
+                    }
                 } else {
+                    isLoading = false
                     progressBar.visibility = View.GONE
                     Toast.makeText(requireContext(), "Failed: ${jsonObject.optString("message")}", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
+                isLoading = false
                 progressBar.visibility = View.GONE
                 Toast.makeText(requireContext(), "Error loading data: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
 
-    companion object {
-        fun newInstance(args: Bundle?) = AssetFragment()
-            .apply { arguments = args }
-    }
-
     private fun handleAssetScanResult(rfids: List<String>) {
         if (rfids.isEmpty()) return
         shouldRefreshOnResume = true
         Toast.makeText(requireContext(), "Asset processed successfully", Toast.LENGTH_SHORT).show()
+    }
+
+    companion object {
+        private const val TAG = "AssetFragment"
+
+        fun newInstance(args: Bundle?) = AssetFragment()
+            .apply { arguments = args }
     }
 }
