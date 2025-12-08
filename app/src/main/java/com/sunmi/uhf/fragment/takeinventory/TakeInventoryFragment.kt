@@ -190,10 +190,10 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         adapter.setNewInstance(list)
         vm.topSearchEn.value = !list.isNullOrEmpty()
         vm.start.observe(viewLifecycleOwner, Observer { startStop(it) })
-//        vm.editModel.observe(viewLifecycleOwner, Observer {
-//            adapter.editable = it
-//            adapter.notifyDataSetChanged()
-//        })
+        vm.editModel.observe(viewLifecycleOwner, Observer {
+            adapter.editable = it
+            adapter.notifyDataSetChanged()
+        })
         vm.selectModel.observe(viewLifecycleOwner, Observer {
             modelAdapter?.selected = it
             modelAdapter?.notifyDataSetChanged()
