@@ -13,6 +13,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.sunmi.uhf.R
+import com.sunmi.uhf.R.id.recyclerViewProductAsset
 import com.sunmi.uhf.base.BaseActivity
 import com.sunmi.uhf.utils.AuthUtils
 import com.sunmi.uhf.service.ApiHelper
@@ -38,11 +39,11 @@ class ProductAssetFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val view = inflater.inflate(R.layout.fragment_receiving_notes, container, false)
+        val view = inflater.inflate(R.layout.fragment_product_asset, container, false)
 
-        recyclerView = view.findViewById(R.id.recyclerViewReceiving)
-        progressBar = view.findViewById(R.id.progressBarReceiving)
-        contentLayout = view.findViewById(R.id.contentLayoutReceiving)
+        recyclerView = view.findViewById(recyclerViewProductAsset)
+        progressBar = view.findViewById(R.id.progressBarProductAsset)
+        contentLayout = view.findViewById(R.id.contentLayoutProductAsset)
 
         adapter = ProductAssetAdapter(mutableListOf()) { item ->
             val fragment = ProductAssetDetailFragment.newInstance(item)
@@ -72,17 +73,17 @@ class ProductAssetFragment : Fragment() {
                         && firstVisibleItemPosition >= 0
                         && totalItemCount >= pageSize
                     ) {
-                        loadReceivingNotes(page = currentPage + 1)
+                        loadProductAssetNotes(page = currentPage + 1)
                     }
                 }
             }
         })
 
-        loadReceivingNotes(page = 1)
+        loadProductAssetNotes(page = 1)
         return view
     }
 
-    private fun loadReceivingNotes(page: Int = 1) {
+    private fun loadProductAssetNotes(page: Int = 1) {
         // show top progress only for first page
         if (page == 1) {
             progressBar.visibility = View.VISIBLE
@@ -109,8 +110,9 @@ class ProductAssetFragment : Fragment() {
                 )
 
                 if (jsonObject.getString("status") == "success") {
-                    val jsonArray = jsonObject.getJSONArray("pickings")
-                    val receivingList = mutableListOf<ProductAssetItem>()
+                    // API returns 'assets' array
+                    val jsonArray = jsonObject.getJSONArray("assets")
+                    val productAssetList = mutableListOf<ProductAssetItem>()
 
                     for (i in 0 until jsonArray.length()) {
                         val obj = jsonArray.getJSONObject(i)
@@ -119,36 +121,36 @@ class ProductAssetFragment : Fragment() {
                         if (seenIds.contains(id)) continue
 
                         seenIds.add(id)
-                        receivingList.add(
+                        productAssetList.add(
                             ProductAssetItem(
-                                id = id,
-                                name = obj.getString("name"),
-                                scheduledDate = obj.optString("scheduled_date", "-"),
-                                partnerName = obj.optString("partner_name", "-"),
-                                state = obj.optString("state", "-")
+                                id,
+                                obj.optString("name", "-"),
+                                obj.optString("product_id", "-"),
+                                obj.optString("asset_code", ""),
+                                obj.optString("asset_category", "")
                             )
                         )
                     }
-                    Log.d(TAG, "fetched total=${jsonArray.length()} new=${receivingList.size} seenTotal=${seenIds.size}")
+                    Log.d(TAG, "fetched total=${jsonArray.length()} new=${productAssetList.size} seenTotal=${seenIds.size}")
 
                     progressBar.visibility = View.GONE
                     contentLayout.visibility = View.VISIBLE
 
                     // if no new items were returned for this page, treat as last page
-                    if (receivingList.isEmpty() && page > 1) {
+                    if (productAssetList.isEmpty() && page > 1) {
                         isLastPage = true
                         isLoading = false
                         return@launch
                     }
 
                     if (page == 1) {
-                        adapter.updateData(receivingList)
+                        adapter.updateData(productAssetList)
                     } else {
-                        adapter.appendData(receivingList)
+                        adapter.appendData(productAssetList)
                     }
 
                     isLoading = false
-                    if (receivingList.size < pageSize) {
+                    if (productAssetList.size < pageSize) {
                         isLastPage = true
                     } else {
                         currentPage = page
@@ -167,7 +169,7 @@ class ProductAssetFragment : Fragment() {
     }
 
     companion object {
-        private const val TAG = "ReceivingFragment"
+        private const val TAG = "productAssetFragment"
 
         fun newInstance(nothing: Nothing?) = ProductAssetFragment()
     }

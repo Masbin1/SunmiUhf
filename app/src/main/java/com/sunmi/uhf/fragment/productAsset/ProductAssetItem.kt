@@ -3,15 +3,22 @@ package com.sunmi.uhf.fragment.productAsset
 import android.os.Parcel
 import android.os.Parcelable
 
+// Updated to match API response: id, name, productName, assetCode, assetCategory
 data class ProductAssetItem(
     val id: Int,
     val name: String,
-    val partnerName: String,
-    val scheduledDate: String,
-    val state: String
+    val productName: String,
+    val assetCode: String,
+    val assetCategory: String,
+    val serialNo: String = "",
+    val rfid: String = "",
+    val heldBy: String = ""
 ) : Parcelable {
     constructor(parcel: Parcel) : this(
         parcel.readInt(),
+        parcel.readString() ?: "",
+        parcel.readString() ?: "",
+        parcel.readString() ?: "",
         parcel.readString() ?: "",
         parcel.readString() ?: "",
         parcel.readString() ?: "",
@@ -21,9 +28,12 @@ data class ProductAssetItem(
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeInt(id)
         parcel.writeString(name)
-        parcel.writeString(partnerName)
-        parcel.writeString(scheduledDate)
-        parcel.writeString(state)
+        parcel.writeString(productName)
+        parcel.writeString(assetCode)
+        parcel.writeString(assetCategory)
+        parcel.writeString(serialNo)
+        parcel.writeString(rfid)
+        parcel.writeString(heldBy)
     }
 
     override fun describeContents(): Int = 0

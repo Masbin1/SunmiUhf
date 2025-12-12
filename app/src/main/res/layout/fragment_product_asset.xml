@@ -7,7 +7,7 @@
 
     <!-- Loading Spinner -->
     <ProgressBar
-        android:id="@+id/progressBarReceiving"
+        android:id="@+id/progressBarProductAsset"
         style="?android:attr/progressBarStyleLarge"
         android:layout_width="60dp"
         android:layout_height="60dp"
@@ -17,7 +17,7 @@
 
     <!-- Content Layout -->
     <LinearLayout
-        android:id="@+id/contentLayoutReceiving"
+        android:id="@+id/contentLayoutProductAsset"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
@@ -36,7 +36,7 @@
                     android:layout_width="28dp"
                     android:layout_height="28dp"
                     android:layout_marginEnd="8dp"
-                    android:contentDescription="Receiving Notes Icon"
+                    android:contentDescription="Product Asset"
                     android:src="@drawable/inventory_icon"
                     app:tint="#4A90E2" />
 
@@ -45,9 +45,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:letterSpacing="0.02"
-                    android:text="Receiving Notes"
+                    android:text="Product Asset"
                     android:textColor="#1E1E1E"
-
                     android:textSize="20sp"
                     android:textStyle="bold" />
             </LinearLayout>
@@ -56,7 +55,7 @@
         <!-- RecyclerView Container -->
 
         <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recyclerViewReceiving"
+            android:id="@+id/recyclerViewProductAsset"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"

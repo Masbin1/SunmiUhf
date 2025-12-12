@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:card_view="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/cardReceiving"
+    android:id="@+id/cardProductAsset"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
@@ -15,36 +15,39 @@
         android:padding="12dp">
 
         <TextView
-            android:id="@+id/txtReceivingName"
+            android:id="@+id/txtAssetName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="RN0001"
+            android:text="Asset Name"
             android:textStyle="bold"
             android:textSize="16sp"
             android:textColor="@android:color/black" />
 
         <TextView
-            android:id="@+id/txtPartner"
+            android:id="@+id/txtProductName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Partner Name"
+            android:text="Product"
             android:textSize="14sp"
-            android:textColor="@android:color/darker_gray" />
+            android:textColor="@android:color/darker_gray"
+            android:layout_marginTop="4dp" />
 
         <TextView
-            android:id="@+id/txtScheduledDate"
+            android:id="@+id/txtAssetCode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="2025-11-12"
+            android:text="Asset Code"
             android:textSize="14sp"
-            android:textColor="@android:color/darker_gray" />
+            android:textColor="@android:color/darker_gray"
+            android:layout_marginTop="4dp" />
 
         <TextView
-            android:id="@+id/txtState"
+            android:id="@+id/txtAssetCategory"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="draft"
+            android:text="Category"
             android:textSize="14sp"
-            android:textColor="@android:color/holo_green_dark" />
+            android:textColor="@android:color/holo_green_dark"
+            android:layout_marginTop="4dp" />
     </LinearLayout>
 </androidx.cardview.widget.CardView>

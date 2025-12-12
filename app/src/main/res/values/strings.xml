@@ -224,7 +224,7 @@
     <string name="please_input_file_name">Please enter the file name</string>
     <string name="please_take_inventory_before_proceeding">Please take stock before operating</string>
     <string name="please_take_select_before_proceeding">Please select before operating</string>
-    <string name="please_select_single_tag">Please select one tag to proceed</string>
+    <string name="please_select_single_tag" tools:ignore="MissingTranslation">Please select one tag to proceed</string>
     <string name="hint_excel_save_to_sd">Excel exported to the SD card</string>
     <string name="hint_copy_epc_clipboard">Copied to the clipboard</string>
     
@@ -244,4 +244,5 @@
     <string name="handle_trigger_mode_tap">Tap to trigger</string>
     <string name="setting_rf_power_text">RF power setting</string>
     <string name="please_input_rf_power">please enter the RF power</string>
+    <string name="save_text">Save</string>
 </resources>
