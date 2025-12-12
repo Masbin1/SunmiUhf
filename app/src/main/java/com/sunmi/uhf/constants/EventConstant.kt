@@ -64,6 +64,8 @@ object EventConstant {
     // ini untuk Asset
     const val EVENT_ASSET = 1105
 
+    const val EVENT_PRODUCT_ASSET = 1106
+
     /** area name */
     const val LABEL_OPERATION_AREA = "label_operation_area"
 

@@ -159,6 +159,15 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
                 )
             }
 
+            EventConstant.EVENT_PRODUCT_ASSET ->{
+                //This is for repair order check
+                switchFragment(
+                    AssetFragment.newInstance(null),
+                    addToBackStack = true,
+                    clearStack = false
+                )
+            }
+
 
             EventConstant.EVENT_DELIVER_ITEM -> {
 //                This is for Delivery Order to customer

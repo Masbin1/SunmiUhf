@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#FFFFFF">
 
-    <!-- Progress Bar Loading -->
+    <!-- Progress Bar -->
     <ProgressBar
-        android:id="@+id/progressBarAssetDetail"
+        android:id="@+id/progressBarReceivingDetail"
         style="?android:attr/progressBarStyleLarge"
         android:layout_width="60dp"
         android:layout_height="60dp"
@@ -21,23 +20,23 @@
         android:padding="16dp">
 
         <LinearLayout
-            android:id="@+id/layoutContentAsset"
+            android:id="@+id/layoutContentReceiving"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
             <!-- Header -->
             <TextView
-                android:id="@+id/txtAssetTitle"
+                android:id="@+id/txtReceivingTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Asset Order Detail"
+                android:text="Asset"
                 android:textStyle="bold"
                 android:textSize="20sp"
                 android:textColor="#1E1E1E"
                 android:layout_marginBottom="12dp" />
 
-            <!-- Asset Info -->
+            <!-- Info Box -->
             <LinearLayout
                 android:orientation="vertical"
                 android:layout_width="match_parent"
@@ -51,7 +50,7 @@
                     android:id="@+id/txtAssetName"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Asset Transaction Number:"
+                    android:text="Asset Name:"
                     android:textStyle="bold"
                     android:textColor="#333333" />
 
@@ -59,7 +58,7 @@
                     android:id="@+id/txtPartner"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Customer:"
+                    android:text="Vendor:"
                     android:layout_marginTop="4dp" />
 
                 <TextView
@@ -70,36 +69,25 @@
                     android:layout_marginTop="4dp" />
 
                 <TextView
-                    android:id="@+id/txtOrigin"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Origin:"
-                    android:layout_marginTop="4dp" />
-
-                <TextView
                     android:id="@+id/txtState"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="State:"
                     android:layout_marginTop="4dp" />
             </LinearLayout>
-
-            <!-- Move Lines Section -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Move Lines"
-                android:textStyle="bold"
-                android:textColor="#1E1E1E"
-                android:textSize="18sp"
-                android:layout_marginBottom="8dp" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/recyclerViewAssetMove"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false" />
-
         </LinearLayout>
     </ScrollView>
+
+    <!-- Floating Save Button -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/btnSaveReceiving"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="24dp"
+        android:backgroundTint="@color/blue_primary"
+        android:src="@android:drawable/ic_menu_save"
+        android:contentDescription="Save"
+        android:elevation="8dp" />
+
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

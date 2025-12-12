@@ -59,6 +59,10 @@ class HomeViewMode : BaseViewModel() {
         EventConstant.EVENT_ASSET.publish()
     }
 
+    fun onProductAsset(){
+        EventConstant.EVENT_PRODUCT_ASSET.publish()
+    }
+
     /**
      * 标签过滤的点击事件
      */
