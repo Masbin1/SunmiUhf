@@ -64,6 +64,8 @@ class ProductAssetDetailFragment : Fragment() {
         super.onResume()
         if (shouldRefreshOnResume) {
             shouldRefreshOnResume = false
+            // If we flagged a refresh while away, actually reload detail now
+            loadAssetDetail()
         }
     }
 
@@ -171,12 +173,15 @@ class ProductAssetDetailFragment : Fragment() {
                     val heldBy = assetObj.optString("held_by", "")
 
                     activity?.runOnUiThread {
+                        // If we have a pending scanned rfid, prefer showing it so the UI doesn't get overwritten
+                        val displayedRfid = if (!pendingScannedRfid.isNullOrEmpty()) pendingScannedRfid!! else rfid
+
                         txtAssetName.text = name
                         txtProductTemplate.text = productTemplate
                         txtAssetCode.text = assetCode
                         txtCategory.text = category
                         txtSerialNo.text = serialNo
-                        txtRfid.text = rfid
+                        txtRfid.text = displayedRfid
                         txtHeldBy.text = heldBy
 
                         progressBar.visibility = View.GONE
@@ -207,6 +212,7 @@ class ProductAssetDetailFragment : Fragment() {
             Toast.makeText(requireContext(), "RFID scanned: $rfid", Toast.LENGTH_SHORT).show()
             // enable save button so user can persist change
             btnSaveProductAsset.visibility = View.VISIBLE
+            btnSaveProductAsset.isEnabled = true
         }
     }
 
@@ -241,19 +247,40 @@ class ProductAssetDetailFragment : Fragment() {
                 if (response.isSuccessful && !bodyStr.isNullOrEmpty()) {
                     try {
                         val obj = JSONObject(bodyStr)
-                        val status = obj.optString("status", "")
-                        if (status == "success" || obj.optBoolean("success", false)) {
-                            activity?.runOnUiThread {
-                                btnSaveProductAsset.isEnabled = true
-                                Toast.makeText(requireContext(), "RFID assigned successfully", Toast.LENGTH_SHORT).show()
-                                // refresh detail from server
-                                loadAssetDetail()
+                        val result = obj.optJSONObject("result")
+
+                        if (result != null) {
+                            val status = result.optString("status", "")
+                            val success = result.optBoolean("success", false)
+
+                            if (status == "success" || success) {
+                                activity?.runOnUiThread {
+                                    btnSaveProductAsset.isEnabled = true
+                                    Toast.makeText(
+                                        requireContext(),
+                                        result.optString("message", "RFID assigned successfully"),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    loadAssetDetail()
+                                }
+                            } else {
+                                activity?.runOnUiThread {
+                                    btnSaveProductAsset.isEnabled = true
+                                    Toast.makeText(
+                                        requireContext(),
+                                        result.optString("message", "Failed to assign RFID"),
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
                             }
                         } else {
-                            val msg = obj.optString("message", obj.optString("error", "Failed to assign RFID"))
                             activity?.runOnUiThread {
                                 btnSaveProductAsset.isEnabled = true
-                                Toast.makeText(requireContext(), msg, Toast.LENGTH_LONG).show()
+                                Toast.makeText(
+                                    requireContext(),
+                                    "Invalid server response",
+                                    Toast.LENGTH_LONG
+                                ).show()
                             }
                         }
                     } catch (e: Exception) {
