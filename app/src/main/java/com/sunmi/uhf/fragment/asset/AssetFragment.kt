@@ -149,8 +149,8 @@ class AssetFragment : Fragment() {
 
     private fun goToTakeInventory() {
         val args = Bundle().apply {
-            putInt(TakeInventoryFragment.ARC_KEY_ASSET_ID, 0)
             selectedUserId?.let { putInt("selected_user_id", it) }
+            putInt(TakeInventoryFragment.ARC_KEY_ASSET_ID, 1)
             selectedUserName?.let { putString("selected_user_name", it) }
         }
         val fragment = TakeInventoryFragment.newInstance(args)
