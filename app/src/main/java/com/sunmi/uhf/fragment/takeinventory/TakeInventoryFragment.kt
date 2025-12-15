@@ -149,6 +149,10 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
 
     override fun initData() {
         super.initData()
+        vm.receivingVisible.value = false
+        vm.deliveryVisible.value = false
+        vm.assetVisible.value = false
+        vm.productAssetVisible.value = false
         vm.editModel.value = false
         when {
             receivingItem != null -> {
@@ -178,16 +182,14 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                 vm.assetVisible.value = false
                 vm.editModel.value = true
             }
-
-            productAssetArgId != null -> {
+            productAssetArgId != null && productAssetArgId != 0 -> {
                 vm.productAssetVisible.value = true
                 vm.deliveryVisible.value = false
                 vm.receivingVisible.value = false
                 vm.assetVisible.value = false
                 vm.editModel.value = true
             }
-
-            assetId != null -> {
+            selectedUserId != null && selectedUserId != 0 -> {
                 vm.assetVisible.value = true
                 vm.deliveryVisible.value = false
                 vm.receivingVisible.value = false
@@ -195,14 +197,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                 vm.editModel.value = true
             }
 
-            else -> {
-                // Kalau semuanya null
-                vm.receivingVisible.value = false
-                vm.deliveryVisible.value = false
-                vm.assetVisible.value = false
-                vm.productAssetVisible.value = false
-                vm.editModel.value = false
-            }
+
         }
 
         adapter.setNewInstance(list)
