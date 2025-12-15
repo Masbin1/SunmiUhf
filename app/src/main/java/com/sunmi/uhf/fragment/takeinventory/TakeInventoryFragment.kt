@@ -36,6 +36,7 @@ import com.sunmi.uhf.dialog.SureBackDialog
 import com.sunmi.uhf.event.SimpleViewEvent
 import com.sunmi.uhf.fragment.ReadBaseFragment
 import com.sunmi.uhf.fragment.deliveryorder.DeliveryMoveItem
+import com.sunmi.uhf.fragment.productAsset.ProductAssetItem
 import com.sunmi.uhf.fragment.receivingnotes.ReceivingMoveItem
 import com.sunmi.uhf.utils.*
 import com.sunmi.uhf.service.OdooApiClient
@@ -64,12 +65,12 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     private var receivingItem: ReceivingMoveItem? = null
     private var receivingScanResultListener: ((Int, String) -> Unit)? = null
     private var pickingId: Int? = null
-
     private var assetId: Int? = null
+    private var productAssetItem: ProductAssetItem? = null
     private var selectedUserId: Int? = null
     private var selectedUserName: String? = null
     private var deliveryScanResultListener: ((List<String>) -> Unit)? = null
-
+    private var productAssetScanResultListener: ((List<String>) -> Unit)? = null
     private var assetScanResultListener: ((List<String>) -> Unit)? = null
     private var isLoop = false
     private var allCount = 0
@@ -116,6 +117,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         receivingItem = arguments?.getSerializable(ARG_KEY_RECEIVING_ITEM) as? ReceivingMoveItem
         pickingId = arguments?.getInt(ARG_KEY_PICKING_ID)
         assetId = arguments?.getInt(ARC_KEY_ASSET_ID)
+        productAssetItem = arguments?.getInt(ARC_KEY_PRODUCT_ASSET_ID) as? ProductAssetItem
         selectedUserId = arguments?.getInt("selected_user_id")
         selectedUserName = arguments?.getString("selected_user_name")
     }
@@ -146,6 +148,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
             receivingItem != null -> {
                 val it = receivingItem!!
                 vm.receivingVisible.value = true
+                vm.productAssetVisible.value = false
                 vm.deliveryVisible.value = false
                 vm.assetVisible.value = false
 
@@ -166,16 +169,34 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
             pickingId != null && pickingId != 0 -> {
                 vm.deliveryVisible.value = true
                 vm.receivingVisible.value = false
+                vm.productAssetVisible.value = false
                 vm.assetVisible.value = false
                 vm.editModel.value = true
             }
+
 
 
             assetId != null -> {
                 vm.assetVisible.value = true
                 vm.deliveryVisible.value = false
                 vm.receivingVisible.value = false
+                vm.productAssetVisible.value = false
                 vm.editModel.value = true
+            }
+
+            productAssetItem != null -> {
+                val it = productAssetItem!!
+                vm.productAssetVisible.value = true
+                vm.deliveryVisible.value = false
+                vm.receivingVisible.value = false
+                vm.assetVisible.value = false
+                vm.editModel.value = true
+                val currentRfid = when {
+                    !it.pendingRfid.isNullOrEmpty() -> it.pendingRfid
+                    it.rfid.isNotEmpty() -> it.rfid
+                    else -> null
+                }
+                vm.productAssetRFID.value = currentRfid?.let { v -> "RFID: $v" } ?: "RFID: -"
             }
 
             else -> {
@@ -310,6 +331,10 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
             EventConstant.EVENT_ASSET_PROCESS -> {
                 processAssetSelection()
             }
+
+            EventConstant.EVENT_PRODUCT_ASSET_PROCESS -> {
+                processProductAssetSelection()
+            }
             EventConstant.EVENT_TAKE_LABEL_INFO -> {
 
             }
@@ -365,7 +390,6 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         checkRfidsAndCreateMoves(item, rfids)
     }
 
-
     private fun processAssetSelection() {
         val rfids = tidList.toList() // Get all scanned RFIDs
         if (rfids.isEmpty()) {
@@ -374,6 +398,35 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         }
         // Query server for product info for each RFID
         checkRfidsAndAsset(rfids)
+    }
+
+    private fun processProductAssetSelection() {
+        val item = productAssetItem ?: return
+        if (adapter.selectData.size == 0) {
+            mainScope.launch { showShort(getString(R.string.please_take_select_before_proceeding)) }
+            return
+        }
+        if (adapter.selectData.size > 1) {
+            mainScope.launch { showShort(getString(R.string.please_select_single_tag)) }
+            return
+        }
+        val rfidValue = adapter.selectData.values.firstOrNull()?.epc.orEmpty()
+        if (rfidValue.isEmpty()) {
+            mainScope.launch { showShort(getString(R.string.hint_unknow_error)) }
+            return
+        }
+        vm.receivingRfid.value = "RFID: $rfidValue"
+        productAssetScanResultListener?.invoke(item.id, rfidValue)
+        productAssetItem = productAssetItem?.let { current ->
+            val pendingValue = if (rfidValue == current.rfid) null else rfidValue
+            current.copy(pendingRfid = pendingValue)
+        }
+        adapter.selectData.clear()
+        adapter.selectAll = false
+        adapter.notifyDataSetChanged()
+        vm.editEnExport.postValue(false)
+        vm.selectAll.postValue(false)
+        performBackClick()
     }
 
     private fun checkRfidsAndCreateMoves(pickingId: Int, rfids: List<String>) {
@@ -521,7 +574,6 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         })
     }
 
-
     private fun checkRfidsAndAsset(rfids: List<String>) {
         val client = OdooApiClient.getClient()
         val jsonBody = JSONObject().apply {
@@ -562,22 +614,22 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                         if (success) {
                             val results = payload.optJSONArray("results") ?: JSONArray()
                             val validRfids = mutableListOf<String>()
-                            val productAssetIds = mutableListOf<Int>()
+                            val productAssetItems = mutableListOf<Int>()
 
                             for (i in 0 until results.length()) {
                                 val result = results.optJSONObject(i) ?: continue
                                 val rfid = result.optString("rfid", "")
-                                val productAssetId = result.optInt("id", -1)
+                                val productAssetItem = result.optInt("id", -1)
                                 val status = result.optString("status", "")
 
-                                if (status == "found" && productAssetId != -1) {
+                                if (status == "found" && productAssetItem != -1) {
                                     validRfids.add(rfid)
-                                    productAssetIds.add(productAssetId)
+                                    productAssetItems.add(productAssetItem)
                                 }
                             }
 
                             if (validRfids.isNotEmpty()) {
-                                createAsset(productAssetIds, validRfids, selectedUserId, selectedUserName) {
+                                createAsset(productAssetItems, validRfids, selectedUserId, selectedUserName) {
                                     mainScope.launch {
                                         showShort("Processed ${validRfids.size} valid RFIDs")
                                         assetScanResultListener?.invoke(validRfids)
@@ -613,11 +665,11 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         })
     }
 
-    private fun createAsset(productAssetIds: List<Int>, rfids: List<String>, userId: Int?, userName: String?, onComplete: (() -> Unit)? = null) {
+    private fun createAsset(productAssetItems: List<Int>, rfids: List<String>, userId: Int?, userName: String?, onComplete: (() -> Unit)? = null) {
         val client = OdooApiClient.getClient()
         val jsonBody = JSONObject().apply {
             put("asset_id", assetId)
-            put("product_asset_ids", JSONArray(productAssetIds))
+            put("product_asset_ids", JSONArray(productAssetItems))
             put("rfids", JSONArray(rfids))
             if (userId != null) {
                 put("user_id", userId)
@@ -666,9 +718,6 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
             }
         })
     }
-
-
-
 
     /**
      * 弹出显示 盘存模式列表
@@ -1232,6 +1281,10 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         deliveryScanResultListener = listener
     }
 
+    fun setProductAssetScanResultListener(listener: (List<String>) -> Unit) {
+        productAssetScanResultListener = listener
+    }
+
     fun setAssetScanResultListener(listener: (List<String>) -> Unit) {
         assetScanResultListener = listener
     }
@@ -1242,8 +1295,8 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
 
         const val ARG_KEY_RECEIVING_ITEM = "arg_receiving_item"
         const val ARG_KEY_PICKING_ID = "arg_picking_id"
-
         const val ARC_KEY_ASSET_ID = "arc_asset_id"
+        const val ARC_KEY_PRODUCT_ASSET_ID = "arc_product_asset_id"
         const val REQUEST_PERMISSION_ID = 101
     }
 }

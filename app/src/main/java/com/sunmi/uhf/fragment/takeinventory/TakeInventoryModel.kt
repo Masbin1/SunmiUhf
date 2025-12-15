@@ -60,10 +60,11 @@ class TakeInventoryModel : BaseViewModel() {
     val receivingQty = MutableLiveData<String>()
     val receivingUom = MutableLiveData<String>()
     val receivingRfid = MutableLiveData<String>()
+
+    val productAssetRFID = MutableLiveData<String>()
     val deliveryVisible = MutableLiveData<Boolean>(false)
-
     val assetVisible = MutableLiveData<Boolean>(false)
-
+    val productAssetVisible = MutableLiveData<Boolean>(false)
     /**
      * 返回点击事件
      */
@@ -155,6 +156,10 @@ class TakeInventoryModel : BaseViewModel() {
 
     fun onAssetProcessClick() {
         EventConstant.EVENT_ASSET_PROCESS.publish()
+    }
+
+    fun onProductAssetProcessClick() {
+        EventConstant.EVENT_PRODUCT_ASSET_PROCESS.publish()
     }
 
 

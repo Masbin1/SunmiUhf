@@ -210,16 +210,41 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- Floating Save Button (hidden by code) -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/btnSaveProductAsset"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="24dp"
-        android:backgroundTint="@color/blue_primary"
-        android:src="@android:drawable/ic_menu_save"
-        android:contentDescription="@string/save_text"
-        android:elevation="8dp" />
+    <!-- Floating Buttons: cleaned up overlay container anchored to bottom-end -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="false"
+        android:focusable="false">
 
+        <LinearLayout
+            android:id="@+id/fabContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_gravity="bottom|end"
+            android:padding="16dp"
+            android:layout_margin="8dp">
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/btnScan"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                android:contentDescription="Scan"
+                android:src="@drawable/ic_scan"
+                android:backgroundTint="@color/blue_primary" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/btnSaveProductAsset"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="Save"
+                android:src="@android:drawable/ic_menu_save"
+                android:backgroundTint="@color/blue_primary"
+                android:elevation="8dp" />
+
+        </LinearLayout>
+
+    </FrameLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -12,7 +12,8 @@ data class ProductAssetItem(
     val assetCategory: String,
     val serialNo: String = "",
     val rfid: String = "",
-    val heldBy: String = ""
+    val heldBy: String = "",
+    var pendingRfid: String? = null
 ) : Parcelable {
     constructor(parcel: Parcel) : this(
         parcel.readInt(),

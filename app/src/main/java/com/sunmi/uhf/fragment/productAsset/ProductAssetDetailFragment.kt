@@ -5,7 +5,9 @@ import android.os.Bundle
 import android.view.*
 import android.widget.*
 import androidx.fragment.app.Fragment
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.sunmi.uhf.R
+import com.sunmi.uhf.fragment.takeinventory.TakeInventoryFragment
 import com.sunmi.uhf.utils.AuthUtils
 import com.sunmi.uhf.service.OdooApiClient
 import okhttp3.*
@@ -25,7 +27,11 @@ class ProductAssetDetailFragment : Fragment() {
     private lateinit var txtSerialNo: TextView
     private lateinit var txtRfid: TextView
     private lateinit var txtHeldBy: TextView
-    private lateinit var btnSaveProductAsset: View
+
+    private lateinit var btnScan: FloatingActionButton
+    private lateinit var btnSaveProductAsset: FloatingActionButton
+
+    private var shouldRefreshOnResume = false
 
     companion object {
         fun newInstance(id: Int): ProductAssetDetailFragment {
@@ -52,6 +58,13 @@ class ProductAssetDetailFragment : Fragment() {
         productAssetItem = arguments?.getParcelable("productAsset_item")
     }
 
+    override fun onResume() {
+        super.onResume()
+        if (shouldRefreshOnResume) {
+            shouldRefreshOnResume = false
+        }
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View {
@@ -69,6 +82,24 @@ class ProductAssetDetailFragment : Fragment() {
 
         // No update functionality here by default — hide save button
         btnSaveProductAsset.visibility = View.VISIBLE
+        btnScan = view.findViewById(R.id.btnScan)
+
+        btnScan.setOnClickListener {
+            val args = Bundle().apply {
+                putInt(TakeInventoryFragment.ARC_KEY_PRODUCT_ASSET_ID, productAssetId)
+            }
+
+            val fragment = TakeInventoryFragment.newInstance(args)
+            fragment.setProductAssetScanResultListener { rfids ->
+                handleProductAssetScanResult(rfids)
+            }
+
+            (activity as? com.sunmi.uhf.base.BaseActivity<*>)?.switchFragment(
+                fragment,
+                addToBackStack = true,
+                clearStack = false
+            )
+        }
 
         // If fragment was created with a ProductAssetItem from the list, display basic info immediately
         if (productAssetItem != null) {
@@ -155,5 +186,14 @@ class ProductAssetDetailFragment : Fragment() {
                 }
             }
         })
+    }
+
+    private fun handleProductAssetScanResult(rfids: List<String>) {
+        if (rfids.isEmpty()) return
+
+        // Set flag to refresh data when fragment resumes after scanning
+        shouldRefreshOnResume = true
+
+        Toast.makeText(requireContext(), "Processed ${rfids.size} RFIDs successfully", Toast.LENGTH_SHORT).show()
     }
 }
