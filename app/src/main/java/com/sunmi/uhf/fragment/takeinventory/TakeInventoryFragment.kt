@@ -46,6 +46,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
@@ -67,10 +68,12 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     private var pickingId: Int? = null
     private var assetId: Int? = null
     private var productAssetItem: ProductAssetItem? = null
+    // store asset id passed via arguments (some callers only pass the id, not the full Parcelable)
+    private var productAssetArgId: Int? = null
     private var selectedUserId: Int? = null
     private var selectedUserName: String? = null
     private var deliveryScanResultListener: ((List<String>) -> Unit)? = null
-    private var productAssetScanResultListener: ((List<String>) -> Unit)? = null
+    private var productAssetScanResultListener: ((Int, String) -> Unit)? = null
     private var assetScanResultListener: ((List<String>) -> Unit)? = null
     private var isLoop = false
     private var allCount = 0
@@ -117,7 +120,10 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         receivingItem = arguments?.getSerializable(ARG_KEY_RECEIVING_ITEM) as? ReceivingMoveItem
         pickingId = arguments?.getInt(ARG_KEY_PICKING_ID)
         assetId = arguments?.getInt(ARC_KEY_ASSET_ID)
-        productAssetItem = arguments?.getInt(ARC_KEY_PRODUCT_ASSET_ID) as? ProductAssetItem
+        // productAssetItem may be passed as a Parcelable; try getting it safely
+        productAssetItem = arguments?.getParcelable("productAsset_item")
+        // but sometimes only an Int id is passed (from ProductAssetDetailFragment). Capture that too.
+        productAssetArgId = arguments?.getInt(ARC_KEY_PRODUCT_ASSET_ID)
         selectedUserId = arguments?.getInt("selected_user_id")
         selectedUserName = arguments?.getString("selected_user_name")
     }
@@ -165,7 +171,6 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                 vm.receivingRfid.value = currentRfid?.let { v -> "RFID: $v" } ?: "RFID: -"
                 vm.editModel.value = true
             }
-
             pickingId != null && pickingId != 0 -> {
                 vm.deliveryVisible.value = true
                 vm.receivingVisible.value = false
@@ -174,7 +179,13 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                 vm.editModel.value = true
             }
 
-
+            productAssetArgId != null -> {
+                vm.productAssetVisible.value = true
+                vm.deliveryVisible.value = false
+                vm.receivingVisible.value = false
+                vm.assetVisible.value = false
+                vm.editModel.value = true
+            }
 
             assetId != null -> {
                 vm.assetVisible.value = true
@@ -184,26 +195,12 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                 vm.editModel.value = true
             }
 
-            productAssetItem != null -> {
-                val it = productAssetItem!!
-                vm.productAssetVisible.value = true
-                vm.deliveryVisible.value = false
-                vm.receivingVisible.value = false
-                vm.assetVisible.value = false
-                vm.editModel.value = true
-                val currentRfid = when {
-                    !it.pendingRfid.isNullOrEmpty() -> it.pendingRfid
-                    it.rfid.isNotEmpty() -> it.rfid
-                    else -> null
-                }
-                vm.productAssetRFID.value = currentRfid?.let { v -> "RFID: $v" } ?: "RFID: -"
-            }
-
             else -> {
                 // Kalau semuanya null
                 vm.receivingVisible.value = false
                 vm.deliveryVisible.value = false
                 vm.assetVisible.value = false
+                vm.productAssetVisible.value = false
                 vm.editModel.value = false
             }
         }
@@ -401,7 +398,9 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
     }
 
     private fun processProductAssetSelection() {
-        val item = productAssetItem ?: return
+        // Accept either a full ProductAssetItem or just an asset id passed in args
+        val item = productAssetItem
+        val itemId = item?.id ?: productAssetArgId ?: return
         if (adapter.selectData.size == 0) {
             mainScope.launch { showShort(getString(R.string.please_take_select_before_proceeding)) }
             return
@@ -415,18 +414,84 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
             mainScope.launch { showShort(getString(R.string.hint_unknow_error)) }
             return
         }
-        vm.receivingRfid.value = "RFID: $rfidValue"
-        productAssetScanResultListener?.invoke(item.id, rfidValue)
-        productAssetItem = productAssetItem?.let { current ->
-            val pendingValue = if (rfidValue == current.rfid) null else rfidValue
-            current.copy(pendingRfid = pendingValue)
+
+        // Perform server-side check to ensure RFID is available for assignment to product asset
+        val client = OdooApiClient.getClient()
+        val jsonBody = JSONObject().apply {
+            put("rfids", JSONArray().put(rfidValue))
         }
-        adapter.selectData.clear()
-        adapter.selectAll = false
-        adapter.notifyDataSetChanged()
-        vm.editEnExport.postValue(false)
-        vm.selectAll.postValue(false)
-        performBackClick()
+        val requestBody = jsonBody.toString().toRequestBody("application/json".toMediaType())
+        val request = Request.Builder()
+            .url("${AuthUtils.getServerUrl()}/check/product/asset/rfid")
+            .post(requestBody)
+            .addHeader("Content-Type", "application/json")
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                mainScope.launch {
+                    showShort("Failed to check RFID: ${e.message}")
+                }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val body = response.body?.string()
+                if (response.isSuccessful && body != null) {
+                    try {
+                        val jsonResponse = JSONObject(body)
+
+                        // If Odoo returns JSON-RPC wrapper, extract result
+                        val payload = if (jsonResponse.has("result")) jsonResponse.getJSONObject("result") else jsonResponse
+
+                        val success = payload.optBoolean("success", false)
+                        if (success) {
+                            val results = payload.optJSONArray("results") ?: JSONArray()
+                            if (results.length() > 0) {
+                                val first = results.optJSONObject(0)
+                                val status = first?.optString("status", "") ?: ""
+
+                                if (status == "available") {
+                                    // Proceed with assignment on main thread
+                                    mainScope.launch {
+                                        vm.receivingRfid.value = "RFID: $rfidValue"
+                                        // invoke listener with the resolved id
+                                        productAssetScanResultListener?.invoke(itemId, rfidValue)
+                                        // update local productAssetItem if we have one
+                                        productAssetItem = productAssetItem?.let { current ->
+                                            val pendingValue = if (rfidValue == current.rfid) null else rfidValue
+                                            current.copy(pendingRfid = pendingValue)
+                                        }
+                                        adapter.selectData.clear()
+                                        adapter.selectAll = false
+                                        adapter.notifyDataSetChanged()
+                                        vm.editEnExport.postValue(false)
+                                        vm.selectAll.postValue(false)
+                                        performBackClick()
+                                    }
+                                } else {
+                                    // Server reported RFID already used (ValidationError) or other status
+                                    val errorMsg = payload.optString("error", "RFID is not available: $status")
+                                    mainScope.launch { showShort(errorMsg) }
+                                }
+                            } else {
+                                mainScope.launch { showShort("No result from server") }
+                            }
+                        } else {
+                            val error = payload.optString("error", "RFID check failed")
+                            mainScope.launch { showShort(error) }
+                        }
+                    } catch (e: Exception) {
+                        mainScope.launch {
+                            showShort("Error parsing response: ${e.message}")
+                        }
+                    }
+                } else {
+                    mainScope.launch {
+                        showShort("Server error: ${response.code}")
+                    }
+                }
+            }
+        })
     }
 
     private fun checkRfidsAndCreateMoves(pickingId: Int, rfids: List<String>) {
@@ -434,10 +499,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         val jsonBody = JSONObject().apply {
             put("rfids", JSONArray(rfids))
         }
-        val requestBody = RequestBody.create(
-            "application/json".toMediaType(),
-            jsonBody.toString()
-        )
+        val requestBody = jsonBody.toString().toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
             .url("${AuthUtils.getServerUrl()}/check/rfid")
             .post(requestBody)
@@ -533,10 +595,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                 put("lot_id", lotId)
             }
         }
-        val requestBody = RequestBody.create(
-            "application/json".toMediaType(),
-            jsonBody.toString()
-        )
+        val requestBody = jsonBody.toString().toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
             .url("${AuthUtils.getServerUrl()}/create/stock/move/line")
             .post(requestBody)
@@ -579,10 +638,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         val jsonBody = JSONObject().apply {
             put("rfids", JSONArray(rfids))
         }
-        val requestBody = RequestBody.create(
-            "application/json".toMediaType(),
-            jsonBody.toString()
-        )
+        val requestBody = jsonBody.toString().toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
             .url("${AuthUtils.getServerUrl()}/check/asset/rfid")
             .post(requestBody)
@@ -678,10 +734,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
                 put("user_name", userName)
             }
         }
-        val requestBody = RequestBody.create(
-            "application/json".toMediaType(),
-            jsonBody.toString()
-        )
+        val requestBody = jsonBody.toString().toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
             .url("${AuthUtils.getServerUrl()}/create/asset/line")
             .post(requestBody)
@@ -1281,7 +1334,7 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         deliveryScanResultListener = listener
     }
 
-    fun setProductAssetScanResultListener(listener: (List<String>) -> Unit) {
+    fun setProductAssetScanResultListener(listener: (Int, String) -> Unit) {
         productAssetScanResultListener = listener
     }
 
@@ -1300,3 +1353,4 @@ class TakeInventoryFragment : ReadBaseFragment<FragmentTakeInventoryBinding>() {
         const val REQUEST_PERMISSION_ID = 101
     }
 }
+

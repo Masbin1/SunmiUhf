@@ -11,6 +11,8 @@ import com.sunmi.uhf.fragment.takeinventory.TakeInventoryFragment
 import com.sunmi.uhf.utils.AuthUtils
 import com.sunmi.uhf.service.OdooApiClient
 import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import java.io.IOException
 
@@ -90,8 +92,9 @@ class ProductAssetDetailFragment : Fragment() {
             }
 
             val fragment = TakeInventoryFragment.newInstance(args)
-            fragment.setProductAssetScanResultListener { rfids ->
-                handleProductAssetScanResult(rfids)
+            // updated listener signature: (assetId:Int, rfid:String) -> Unit
+            fragment.setProductAssetScanResultListener { assetId, rfid ->
+                handleProductAssetScanResult(assetId, rfid)
             }
 
             (activity as? com.sunmi.uhf.base.BaseActivity<*>)?.switchFragment(
@@ -188,12 +191,98 @@ class ProductAssetDetailFragment : Fragment() {
         })
     }
 
-    private fun handleProductAssetScanResult(rfids: List<String>) {
-        if (rfids.isEmpty()) return
+    private var pendingScannedRfid: String? = null
 
-        // Set flag to refresh data when fragment resumes after scanning
-        shouldRefreshOnResume = true
-
-        Toast.makeText(requireContext(), "Processed ${rfids.size} RFIDs successfully", Toast.LENGTH_SHORT).show()
+    private fun handleProductAssetScanResult(assetId: Int, rfid: String) {
+        // ensure the result is for the current asset (or accept regardless)
+        if (assetId != productAssetId) {
+            // If different, update id and reload detail
+            productAssetId = assetId
+            shouldRefreshOnResume = true
+        }
+        pendingScannedRfid = rfid
+        // Update UI immediately
+        activity?.runOnUiThread {
+            txtRfid.text = rfid
+            Toast.makeText(requireContext(), "RFID scanned: $rfid", Toast.LENGTH_SHORT).show()
+            // enable save button so user can persist change
+            btnSaveProductAsset.visibility = View.VISIBLE
+        }
     }
+
+    // Save assignment to server when Save button clicked
+    private fun saveScannedRfidToServer(assetId: Int, rfid: String) {
+        // NOTE: the server endpoint name is assumed; adjust if your backend differs.
+        val client = OdooApiClient.getClient()
+        val json = JSONObject().apply {
+            put("asset_id", assetId)
+            put("rfid", rfid)
+        }
+        val body = json.toString().toRequestBody("application/json".toMediaType())
+        val request = Request.Builder()
+            .url("${AuthUtils.getServerUrl()}/assign/product/asset/rfid")
+            .post(body)
+            .addHeader("Content-Type", "application/json")
+            .build()
+
+        // disable button while saving
+        activity?.runOnUiThread { btnSaveProductAsset.isEnabled = false }
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                activity?.runOnUiThread {
+                    btnSaveProductAsset.isEnabled = true
+                    Toast.makeText(requireContext(), "Failed to save RFID: ${e.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val bodyStr = response.body?.string()
+                if (response.isSuccessful && !bodyStr.isNullOrEmpty()) {
+                    try {
+                        val obj = JSONObject(bodyStr)
+                        val status = obj.optString("status", "")
+                        if (status == "success" || obj.optBoolean("success", false)) {
+                            activity?.runOnUiThread {
+                                btnSaveProductAsset.isEnabled = true
+                                Toast.makeText(requireContext(), "RFID assigned successfully", Toast.LENGTH_SHORT).show()
+                                // refresh detail from server
+                                loadAssetDetail()
+                            }
+                        } else {
+                            val msg = obj.optString("message", obj.optString("error", "Failed to assign RFID"))
+                            activity?.runOnUiThread {
+                                btnSaveProductAsset.isEnabled = true
+                                Toast.makeText(requireContext(), msg, Toast.LENGTH_LONG).show()
+                            }
+                        }
+                    } catch (e: Exception) {
+                        activity?.runOnUiThread {
+                            btnSaveProductAsset.isEnabled = true
+                            Toast.makeText(requireContext(), "Invalid server response: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                } else {
+                    activity?.runOnUiThread {
+                        btnSaveProductAsset.isEnabled = true
+                        Toast.makeText(requireContext(), "Server error: ${response.code}", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        })
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        // wire save button
+        btnSaveProductAsset.setOnClickListener {
+            val rfid = pendingScannedRfid ?: productAssetItem?.rfid
+            if (rfid.isNullOrEmpty()) {
+                Toast.makeText(requireContext(), "No RFID to save", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            saveScannedRfidToServer(productAssetId, rfid)
+        }
+    }
+
 }
