@@ -163,7 +163,7 @@ class HomeFragment : BaseFragment<FragmentHomeBinding>() {
             EventConstant.EVENT_PRODUCT_ASSET ->{
                 //This is for repair order check
                 switchFragment(
-                    ProductAssetFragment.newInstance(null),
+                    ProductAssetFragment.newInstance(),
                     addToBackStack = true,
                     clearStack = false
                 )

@@ -20,11 +20,9 @@ import com.sunmi.uhf.service.ApiHelper
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import androidx.appcompat.widget.AppCompatEditText
-import org.json.JSONObject
 import org.json.JSONArray
+import android.view.inputmethod.InputMethodManager
 
 class ProductAssetFragment : Fragment() {
 
@@ -62,6 +60,11 @@ class ProductAssetFragment : Fragment() {
         contentLayout = view.findViewById(R.id.contentLayoutProductAsset)
         editSearch = view.findViewById(R.id.editSearchProductAsset)
         txtEmpty = view.findViewById(R.id.txtEmptyProductAsset)
+
+        // make sure content is visible immediately (layout default may be GONE)
+        contentLayout.visibility = View.VISIBLE
+        txtEmpty.visibility = View.GONE
+        recyclerView.visibility = View.VISIBLE
 
         adapter = ProductAssetAdapter(mutableListOf()) { item ->
             val fragment = ProductAssetDetailFragment.newInstance(item)
@@ -114,7 +117,7 @@ class ProductAssetFragment : Fragment() {
                         loadProductAssetNotes(page = 1, query = currentQuery)
                     } else {
                         // If same query but we want local filtering (e.g., when server doesn't support search), apply filter
-                        (adapter as? ProductAssetAdapter)?.filter(currentQuery)
+                        adapter.filter(currentQuery)
                         showEmptyIfNeeded()
                     }
                 }
@@ -133,8 +136,35 @@ class ProductAssetFragment : Fragment() {
 
         // show top progress only for first page
         if (page == 1) {
+            // Keep content visible so search EditText doesn't lose focus.
+            // Show a progress indicator overlay and dim/disable the content to indicate loading.
+            // Preserve current focus + cursor position so the user can continue typing smoothly.
+            val hadFocus = editSearch.hasFocus()
+            val selPos = try { editSearch.selectionStart.coerceAtLeast(0) } catch (_: Exception) { -1 }
+
+            // make sure content is visible (was previously 'gone' in layout by default)
+            contentLayout.visibility = View.VISIBLE
+
             progressBar.visibility = View.VISIBLE
-            contentLayout.visibility = View.GONE
+            contentLayout.isEnabled = false
+            contentLayout.alpha = 0.6f
+
+            // Only restore focus/keyboard if the user already had focus in the search field
+            // or if there is an active query (user expects to type)
+            if (hadFocus || currentQuery.isNotBlank()) {
+                editSearch.post {
+                    try {
+                        editSearch.requestFocus()
+                        if (selPos >= 0) {
+                            val length = editSearch.text?.length ?: 0
+                            editSearch.setSelection(selPos.coerceAtMost(length))
+                        }
+                        val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                        imm.showSoftInput(editSearch, InputMethodManager.SHOW_IMPLICIT)
+                    } catch (_: Exception) {
+                    }
+                }
+            }
             // clear seen IDs when reloading first page
             seenIds.clear()
             isLastPage = false
@@ -175,7 +205,7 @@ class ProductAssetFragment : Fragment() {
                     // as a fallback, try to parse as array directly
                     try {
                         ApiHelper.getJsonArray(url, useCache)
-                    } catch (eArr: Exception) {
+                    } catch (_: Exception) {
                         // propagate original error if both attempts fail
                         throw eObj
                     }
@@ -206,26 +236,37 @@ class ProductAssetFragment : Fragment() {
                 }
                 Log.d(TAG, "fetched total=${jsonArray.length()} new=${productAssetList.size} seenTotal=${seenIds.size}")
 
+                // restore content interactivity and hide progress
                 progressBar.visibility = View.GONE
+                // ensure visible (in case it was GONE initially)
                 contentLayout.visibility = View.VISIBLE
+                 contentLayout.isEnabled = true
+                 contentLayout.alpha = 1f
+
+                // if search is focused, ensure cursor position remains reasonable
+                try {
+                    if (editSearch.hasFocus()) {
+                        val pos = editSearch.selectionStart.coerceAtLeast(0)
+                        val length = editSearch.text?.length ?: 0
+                        editSearch.setSelection(pos.coerceAtMost(length))
+                    }
+                } catch (_: Exception) { }
 
                 // if no new items were returned for this page, treat as last page
                 if (productAssetList.isEmpty() && page > 1) {
                     isLastPage = true
                     isLoading = false
-                    // update empty state if this was first page with query
-                    if (page == 1) showEmptyIfNeeded()
                     return@launch
                 }
 
                 if (page == 1) {
                     adapter.updateData(productAssetList)
                     // apply local filter immediately if user has a query
-                    if (currentQuery.isNotBlank()) (adapter as? ProductAssetAdapter)?.filter(currentQuery)
+                    if (currentQuery.isNotBlank()) adapter.filter(currentQuery)
                 } else {
                     adapter.appendData(productAssetList)
                     // when appending, if there's an active query we should re-filter so new items are considered
-                    if (currentQuery.isNotBlank()) (adapter as? ProductAssetAdapter)?.filter(currentQuery)
+                    if (currentQuery.isNotBlank()) adapter.filter(currentQuery)
                 }
 
                 isLoading = false
@@ -244,7 +285,19 @@ class ProductAssetFragment : Fragment() {
                     return@launch
                 }
                 isLoading = false
+                // make sure UI restored on error
                 progressBar.visibility = View.GONE
+                // ensure visible on error as well (don't leave it GONE)
+                contentLayout.visibility = View.VISIBLE
+                 contentLayout.isEnabled = true
+                 contentLayout.alpha = 1f
+                try {
+                    if (editSearch.hasFocus()) {
+                        val pos = editSearch.selectionStart.coerceAtLeast(0)
+                        val length = editSearch.text?.length ?: 0
+                        editSearch.setSelection(pos.coerceAtMost(length))
+                    }
+                } catch (_: Exception) { }
                 Toast.makeText(requireContext(), "Error loading data: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
@@ -280,7 +333,7 @@ class ProductAssetFragment : Fragment() {
             // 3) fallback to other keys that might exist
             return json.optString("product_name", json.optString("product_display", "-"))
         } catch (e: Exception) {
-            android.util.Log.w("productAssetFragment", "Failed to extract product name: ${e.message}")
+            Log.w(TAG, "Failed to extract product name: ${e.message}")
             return "-"
         }
     }
@@ -288,6 +341,6 @@ class ProductAssetFragment : Fragment() {
     companion object {
         private const val TAG = "productAssetFragment"
 
-        fun newInstance(nothing: Nothing?) = ProductAssetFragment()
+        fun newInstance() = ProductAssetFragment()
     }
 }
