@@ -17,7 +17,14 @@ import com.sunmi.uhf.R.id.recyclerViewProductAsset
 import com.sunmi.uhf.base.BaseActivity
 import com.sunmi.uhf.utils.AuthUtils
 import com.sunmi.uhf.service.ApiHelper
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import androidx.appcompat.widget.AppCompatEditText
+import org.json.JSONObject
+import org.json.JSONArray
 
 class ProductAssetFragment : Fragment() {
 
@@ -25,6 +32,8 @@ class ProductAssetFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var adapter: ProductAssetAdapter
     private lateinit var contentLayout: LinearLayout
+    private lateinit var editSearch: AppCompatEditText
+    private lateinit var txtEmpty: android.widget.TextView
 
     // Pagination state
     private var currentPage = 1
@@ -35,6 +44,13 @@ class ProductAssetFragment : Fragment() {
     // Track already seen item IDs to prevent duplicates when server returns repeated data
     private val seenIds = mutableSetOf<Int>()
 
+    // Search state
+    private var searchJob: Job? = null
+    private var currentQuery: String = ""
+
+    // Job for the current load request so we can cancel in-flight network calls
+    private var loadJob: Job? = null
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -44,6 +60,8 @@ class ProductAssetFragment : Fragment() {
         recyclerView = view.findViewById(recyclerViewProductAsset)
         progressBar = view.findViewById(R.id.progressBarProductAsset)
         contentLayout = view.findViewById(R.id.contentLayoutProductAsset)
+        editSearch = view.findViewById(R.id.editSearchProductAsset)
+        txtEmpty = view.findViewById(R.id.txtEmptyProductAsset)
 
         adapter = ProductAssetAdapter(mutableListOf()) { item ->
             val fragment = ProductAssetDetailFragment.newInstance(item)
@@ -73,17 +91,46 @@ class ProductAssetFragment : Fragment() {
                         && firstVisibleItemPosition >= 0
                         && totalItemCount >= pageSize
                     ) {
-                        loadProductAssetNotes(page = currentPage + 1)
+                        loadProductAssetNotes(page = currentPage + 1, query = currentQuery)
                     }
                 }
             }
+        })
+
+        // Search text listener with debounce
+        editSearch.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val q = s?.toString()?.trim() ?: ""
+                // cancel previous job
+                searchJob?.cancel()
+                searchJob = lifecycleScope.launch {
+                    delay(300) // debounce
+                    // if query changed, reset pagination and reload from page 1 with query
+                    if (q != currentQuery) {
+                        currentQuery = q
+                        // cancel any in-flight load (network) before starting a new one
+                        loadJob?.cancel()
+                        loadProductAssetNotes(page = 1, query = currentQuery)
+                    } else {
+                        // If same query but we want local filtering (e.g., when server doesn't support search), apply filter
+                        (adapter as? ProductAssetAdapter)?.filter(currentQuery)
+                        showEmptyIfNeeded()
+                    }
+                }
+            }
+
+            override fun afterTextChanged(s: android.text.Editable?) {}
         })
 
         loadProductAssetNotes(page = 1)
         return view
     }
 
-    private fun loadProductAssetNotes(page: Int = 1) {
+    private fun loadProductAssetNotes(page: Int = 1, query: String = "") {
+        // cancel any previous load job
+        loadJob?.cancel()
+
         // show top progress only for first page
         if (page == 1) {
             progressBar.visibility = View.VISIBLE
@@ -97,74 +144,144 @@ class ProductAssetFragment : Fragment() {
         }
 
         isLoading = true
-        lifecycleScope.launch {
+        loadJob = lifecycleScope.launch {
             try {
                 // disable cache for subsequent pages to avoid stale repeated responses
-                val useCache = page == 1
+                // If a search query is present, don't use cache even for page 1
+                val useCache = page == 1 && query.isBlank()
                 val offset = (page - 1) * pageSize
-                Log.d(TAG, "request page=$page offset=$offset useCache=$useCache")
-                val url = "${AuthUtils.getServerUrl()}/get/product/asset/?offset=$offset&limit=$pageSize"
-                val jsonObject = ApiHelper.getJsonObject(
-                    url,
-                    useCache = useCache
-                )
+                Log.d(TAG, "request page=$page offset=$offset useCache=$useCache query=$query")
 
-                if (jsonObject.getString("status") == "success") {
-                    // API returns 'assets' array
-                    val jsonArray = jsonObject.getJSONArray("assets")
-                    val productAssetList = mutableListOf<ProductAssetItem>()
+                // include search query if present (URL-encode)
+                val queryParam = if (query.isNotBlank()) "&search=${java.net.URLEncoder.encode(query, "UTF-8")}" else ""
+                val url = "${AuthUtils.getServerUrl()}/get/product/asset/?offset=$offset&limit=$pageSize$queryParam"
 
-                    for (i in 0 until jsonArray.length()) {
-                        val obj = jsonArray.getJSONObject(i)
-                        val id = obj.getInt("id")
-                        // skip items we've already seen to avoid duplicates
-                        if (seenIds.contains(id)) continue
-
-                        seenIds.add(id)
-                        productAssetList.add(
-                            ProductAssetItem(
-                                id,
-                                obj.optString("name", "-"),
-                                obj.optString("product_id", "-"),
-                                obj.optString("asset_code", ""),
-                                obj.optString("asset_category", "")
-                            )
-                        )
-                    }
-                    Log.d(TAG, "fetched total=${jsonArray.length()} new=${productAssetList.size} seenTotal=${seenIds.size}")
-
-                    progressBar.visibility = View.GONE
-                    contentLayout.visibility = View.VISIBLE
-
-                    // if no new items were returned for this page, treat as last page
-                    if (productAssetList.isEmpty() && page > 1) {
-                        isLastPage = true
-                        isLoading = false
-                        return@launch
-                    }
-
-                    if (page == 1) {
-                        adapter.updateData(productAssetList)
+                // Try to fetch a JSON object first; if server returns an array or a raw array string, fall back to getJsonArray
+                val jsonArray: JSONArray = try {
+                    val obj = ApiHelper.getJsonObject(url, useCache)
+                    // If the object contains explicit status + assets
+                    if (obj.optString("status").isNotEmpty()) {
+                        if (obj.optString("status") == "success") {
+                            obj.optJSONArray("assets") ?: obj.optJSONArray("data") ?: JSONArray()
+                        } else {
+                            // server returned failure status
+                            throw Exception("Failed: ${obj.optString("message")} ")
+                        }
                     } else {
-                        adapter.appendData(productAssetList)
+                        // no status field; try to extract arrays commonly named
+                        obj.optJSONArray("assets") ?: obj.optJSONArray("data") ?: JSONArray()
                     }
-
-                    isLoading = false
-                    if (productAssetList.size < pageSize) {
-                        isLastPage = true
-                    } else {
-                        currentPage = page
+                } catch (eObj: Exception) {
+                    // as a fallback, try to parse as array directly
+                    try {
+                        ApiHelper.getJsonArray(url, useCache)
+                    } catch (eArr: Exception) {
+                        // propagate original error if both attempts fail
+                        throw eObj
                     }
-                } else {
-                    isLoading = false
-                    progressBar.visibility = View.GONE
-                    Toast.makeText(requireContext(), "Failed: ${jsonObject.optString("message")}", Toast.LENGTH_SHORT).show()
                 }
+
+                val productAssetList = mutableListOf<ProductAssetItem>()
+
+                for (i in 0 until jsonArray.length()) {
+                    val obj = jsonArray.getJSONObject(i)
+                    val id = obj.getInt("id")
+                    // skip items we've already seen to avoid duplicates
+                    if (seenIds.contains(id)) continue
+
+                    seenIds.add(id)
+
+                    // Defensive extraction of product name — backend may return product_id as string or object
+                    val productName = extractProductName(obj)
+
+                    productAssetList.add(
+                        ProductAssetItem(
+                            id,
+                            obj.optString("name", "-"),
+                            productName,
+                            obj.optString("asset_code", ""),
+                            obj.optString("asset_category", "")
+                        )
+                    )
+                }
+                Log.d(TAG, "fetched total=${jsonArray.length()} new=${productAssetList.size} seenTotal=${seenIds.size}")
+
+                progressBar.visibility = View.GONE
+                contentLayout.visibility = View.VISIBLE
+
+                // if no new items were returned for this page, treat as last page
+                if (productAssetList.isEmpty() && page > 1) {
+                    isLastPage = true
+                    isLoading = false
+                    // update empty state if this was first page with query
+                    if (page == 1) showEmptyIfNeeded()
+                    return@launch
+                }
+
+                if (page == 1) {
+                    adapter.updateData(productAssetList)
+                    // apply local filter immediately if user has a query
+                    if (currentQuery.isNotBlank()) (adapter as? ProductAssetAdapter)?.filter(currentQuery)
+                } else {
+                    adapter.appendData(productAssetList)
+                    // when appending, if there's an active query we should re-filter so new items are considered
+                    if (currentQuery.isNotBlank()) (adapter as? ProductAssetAdapter)?.filter(currentQuery)
+                }
+
+                isLoading = false
+                if (productAssetList.size < pageSize) {
+                    isLastPage = true
+                } else {
+                    currentPage = page
+                }
+
+                // show/hide empty view
+                showEmptyIfNeeded()
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) {
+                    // request was cancelled intentionally; don't show error to user
+                    Log.d(TAG, "loadProductAssetNotes cancelled")
+                    return@launch
+                }
                 isLoading = false
                 progressBar.visibility = View.GONE
                 Toast.makeText(requireContext(), "Error loading data: ${e.message}", Toast.LENGTH_LONG).show()
             }
+        }
+    }
+
+    private fun showEmptyIfNeeded() {
+        if (adapter.itemCount == 0) {
+            txtEmpty.visibility = View.VISIBLE
+            recyclerView.visibility = View.GONE
+        } else {
+            txtEmpty.visibility = View.GONE
+            recyclerView.visibility = View.VISIBLE
+        }
+    }
+
+    // Helper to robustly extract product display name from possible shapes
+    private fun extractProductName(json: org.json.JSONObject): String {
+        try {
+            // 1) product_id might be a JSON object with display_name or name
+            val prodObj = json.optJSONObject("product_id")
+            if (prodObj != null) {
+                return prodObj.optString("display_name", prodObj.optString("name", "-"))
+            }
+
+            // 2) or it might be provided as a simple string like "123: Product Name" or just "Product Name"
+            val prodStr = json.optString("product_id", json.optString("product", "")).trim()
+            if (prodStr.isNotEmpty()) {
+                // if it contains a colon like "123: Name", take the part after colon
+                val parts = prodStr.split(":", limit = 2).map { it.trim() }
+                return if (parts.size == 2) parts[1] else parts[0]
+            }
+
+            // 3) fallback to other keys that might exist
+            return json.optString("product_name", json.optString("product_display", "-"))
+        } catch (e: Exception) {
+            android.util.Log.w("productAssetFragment", "Failed to extract product name: ${e.message}")
+            return "-"
         }
     }
 

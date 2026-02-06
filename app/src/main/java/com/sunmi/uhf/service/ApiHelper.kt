@@ -7,6 +7,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.MediaType.Companion.toMediaType
 import org.json.JSONObject
+import org.json.JSONArray
 
 object ApiHelper {
     private val cache = LruCache<String, CachedResponse>(20)
@@ -19,6 +20,18 @@ object ApiHelper {
         fun isExpired(): Boolean {
             return System.currentTimeMillis() - timestamp > CACHE_DURATION_MS
         }
+    }
+
+    suspend fun getRaw(url: String, useCache: Boolean = true): String = withContext(Dispatchers.IO) {
+        val cachedData = if (useCache) {
+            val cached = cache[url]
+            if (cached != null && !cached.isExpired()) cached else null
+        } else null
+
+        val jsonString = cachedData?.data ?: fetchUrlInternal(url).also {
+            if (useCache) cache.put(url, CachedResponse(it, System.currentTimeMillis()))
+        }
+        jsonString
     }
 
     suspend fun getJsonArray(
@@ -34,13 +47,41 @@ object ApiHelper {
         val jsonString = cachedData?.data ?: fetchUrlInternal(url).also {
             if (useCache) cache.put(url, CachedResponse(it, System.currentTimeMillis()))
         }
-        
-        val jsonObject = JSONObject(jsonString)
-        if (arrayKey.isEmpty()) {
-            jsonObject.getJSONArray("data")
-        } else {
-            jsonObject.getJSONArray(arrayKey)
+
+        // Trim to avoid leading/trailing whitespace/BOM
+        val trimmed = jsonString.trim()
+
+        // If the server returned a raw JSON array (e.g. "[{...}, {...}]") parse it directly
+        if (trimmed.startsWith("[")) {
+            return@withContext JSONArray(trimmed)
         }
+
+        // If it's an object, attempt to extract the array by key (or 'data' by default)
+        if (trimmed.startsWith("{")) {
+            val jsonObject = JSONObject(trimmed)
+            if (arrayKey.isEmpty()) {
+                // common keys that may contain arrays
+                return@withContext jsonObject.optJSONArray("data")
+                    ?: jsonObject.optJSONArray("assets")
+                    ?: JSONArray()
+            } else {
+                return@withContext jsonObject.optJSONArray(arrayKey) ?: JSONArray()
+            }
+        }
+
+        // If response contains extra text around JSON, try to find a JSON array substring
+        val arrayStart = jsonString.indexOf('[')
+        val arrayEnd = jsonString.lastIndexOf(']')
+        if (arrayStart >= 0 && arrayEnd > arrayStart) {
+            val sub = jsonString.substring(arrayStart, arrayEnd + 1).trim()
+            try {
+                return@withContext JSONArray(sub)
+            } catch (e: Exception) {
+                // fall through to error
+            }
+        }
+
+        throw Exception("Invalid JSON response: expected array or object containing array")
     }
 
     suspend fun getJsonObject(
@@ -55,8 +96,33 @@ object ApiHelper {
         val jsonString = cachedData?.data ?: fetchUrlInternal(url).also {
             if (useCache) cache.put(url, CachedResponse(it, System.currentTimeMillis()))
         }
-        
-        JSONObject(jsonString)
+
+        // Trim and try to parse as object first
+        val trimmed = jsonString.trim()
+        if (trimmed.startsWith("{")) {
+            return@withContext JSONObject(trimmed)
+        }
+
+        // If response is a plain array but caller expects an object, wrap it into an object under 'data'
+        if (trimmed.startsWith("[")) {
+            val arr = JSONArray(trimmed)
+            val wrapper = JSONObject()
+            wrapper.put("data", arr)
+            return@withContext wrapper
+        }
+
+        // Try to extract a JSON object substring if there is surrounding text
+        val start = jsonString.indexOf('{')
+        val end = jsonString.lastIndexOf('}')
+        if (start >= 0 && end > start) {
+            try {
+                return@withContext JSONObject(jsonString.substring(start, end + 1))
+            } catch (e: Exception) {
+                // fall through
+            }
+        }
+
+        throw Exception("Invalid JSON response: expected JSON object or array")
     }
 
     suspend fun postJson(
@@ -85,9 +151,16 @@ object ApiHelper {
         val request = Request.Builder()
             .url(url)
             .build()
-        
+
         val response = OdooApiClient.getClient().newCall(request).execute()
-        response.body?.string() ?: throw Exception("Empty response body from $url")
+        val bodyStr = response.body?.string() ?: throw Exception("Empty response body from $url")
+        // Log truncated response to help debugging in Logcat (avoid huge output)
+        try {
+            android.util.Log.d("ApiHelper", "fetchUrlInternal url=$url response=${bodyStr.take(1000)}${if (bodyStr.length > 1000) "..." else ""}")
+        } catch (_: Exception) {
+            // ignore logging failure
+        }
+        bodyStr
     }
 
     fun clearCache(pattern: String = "") {

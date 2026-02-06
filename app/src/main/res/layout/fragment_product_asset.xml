@@ -50,7 +50,30 @@
                     android:textSize="20sp"
                     android:textStyle="bold" />
             </LinearLayout>
-<!--        </androidx.cardview.widget.CardView>-->
+
+        <!-- Search bar -->
+        <androidx.appcompat.widget.AppCompatEditText
+            android:id="@+id/editSearchProductAsset"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="8dp"
+            android:hint="Search by name"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:padding="10dp"
+            android:background="@android:drawable/edit_text" />
+
+        <!-- Empty state (hidden by default) -->
+        <TextView
+            android:id="@+id/txtEmptyProductAsset"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:text="No products found"
+            android:textColor="#777777"
+            android:visibility="gone" />
 
         <!-- RecyclerView Container -->
 
