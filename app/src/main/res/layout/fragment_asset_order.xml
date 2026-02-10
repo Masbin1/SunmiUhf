@@ -24,50 +24,46 @@
         android:padding="16dp"
         android:visibility="gone">
 
-<!--        &lt;!&ndash; Header Card &ndash;&gt;-->
-<!--        <androidx.cardview.widget.CardView-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:layout_marginBottom="12dp"-->
-<!--            android:backgroundTint="@android:color/white"-->
-<!--            android:padding="12dp"-->
-<!--            app:cardCornerRadius="16dp"-->
-<!--            app:cardElevation="3dp">-->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_marginEnd="8dp"
+                android:contentDescription="Asset Order Icon"
+                android:src="@drawable/inventory_icon"
+                app:tint="#4A90E2" />
+
+            <TextView
+                android:id="@+id/textViewTitleAsset"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:text="Asset Order"
+                android:textColor="#1E1E1E"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.02" />
+        </LinearLayout>
 
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:layout_marginEnd="8dp"
-                    android:contentDescription="Asset Order Icon"
-                    android:src="@drawable/inventory_icon"
-                    app:tint="#4A90E2" />
-
-                <TextView
-                    android:id="@+id/textViewTitleAsset"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Asset Order"
-                    android:textColor="#1E1E1E"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:letterSpacing="0.02" />
-            </LinearLayout>
-<!--        </androidx.cardview.widget.CardView>-->
-
-<!--        &lt;!&ndash; RecyclerView Container &ndash;&gt;-->
-<!--        <androidx.cardview.widget.CardView-->
-<!--            android:layout_width="match_parent"-->
-<!--            android:layout_height="0dp"-->
-<!--            android:layout_weight="1"-->
-<!--            android:backgroundTint="@android:color/white"-->
-<!--            app:cardCornerRadius="16dp"-->
-<!--            app:cardElevation="1dp">-->
+        <!-- Search Bar -->
+        <androidx.appcompat.widget.AppCompatEditText
+            android:id="@+id/editSearchAsset"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="8dp"
+            android:hint="Search by name"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:padding="10dp"
+            android:drawableStart="@drawable/ic_search"
+            android:drawablePadding="8dp"
+            android:drawableEnd="@drawable/ic_clear"
+            android:background="@drawable/bg_search_rounded"/>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerViewAsset"
@@ -76,7 +72,6 @@
             android:clipToPadding="false"
             android:padding="12dp"
             android:scrollbars="vertical" />
-<!--        </androidx.cardview.widget.CardView>-->
 
     </LinearLayout>
 

@@ -9,9 +9,18 @@ import androidx.recyclerview.widget.RecyclerView
 import com.sunmi.uhf.R
 
 class AssetAdapter(
-    private var assetList: MutableList<AssetItem>,
+    initialList: MutableList<AssetItem>,
     private val onItemClick: (AssetItem) -> Unit
 ) : RecyclerView.Adapter<AssetAdapter.ViewHolder>() {
+
+    // Keep master and display lists for filtering
+    private val fullList: MutableList<AssetItem> = mutableListOf()
+    private val displayList: MutableList<AssetItem> = mutableListOf()
+
+    init {
+        fullList.addAll(initialList)
+        displayList.addAll(initialList)
+    }
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val card: CardView = view.findViewById(R.id.cardAsset)
@@ -27,10 +36,10 @@ class AssetAdapter(
         return ViewHolder(view)
     }
 
-    override fun getItemCount(): Int = assetList.size
+    override fun getItemCount(): Int = displayList.size
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val item = assetList[position]
+        val item = displayList[position]
         holder.name.text = item.name
         holder.partner.text = item.partnerName
         holder.date.text = item.dueDate
@@ -38,18 +47,52 @@ class AssetAdapter(
         holder.card.setOnClickListener { onItemClick(item) }
     }
 
-    // Replace the whole dataset
+    // Replace the whole dataset (master + display)
     fun updateData(newList: List<AssetItem>) {
-        assetList.clear()
-        assetList.addAll(newList)
+        fullList.clear()
+        fullList.addAll(newList)
+
+        displayList.clear()
+        displayList.addAll(newList)
         notifyDataSetChanged()
     }
 
     // Append page
     fun appendData(newList: List<AssetItem>) {
         if (newList.isEmpty()) return
-        val start = assetList.size
-        assetList.addAll(newList)
-        notifyItemRangeInserted(start, newList.size)
+        val startFull = fullList.size
+        fullList.addAll(newList)
+        if (displayList.size == startFull) {
+            val start = displayList.size
+            displayList.addAll(newList)
+            notifyItemRangeInserted(start, newList.size)
+        } else {
+            // If currently filtered, keep displayList as filtered subset and notify so caller may re-filter
+            notifyDataSetChanged()
+        }
+    }
+
+    /**
+     * Filter by name (case-insensitive contains) and also search partner/state optionally.
+     * If query blank, restore fullList.
+     */
+    fun filter(query: String) {
+        val q = query.trim()
+        if (q.isEmpty()) {
+            displayList.clear()
+            displayList.addAll(fullList)
+            notifyDataSetChanged()
+            return
+        }
+
+        val lower = q.lowercase()
+        val filtered = fullList.filter { item ->
+            item.name.lowercase().contains(lower)
+                    || item.partnerName.lowercase().contains(lower)
+                    || item.state.lowercase().contains(lower)
+        }
+        displayList.clear()
+        displayList.addAll(filtered)
+        notifyDataSetChanged()
     }
 }

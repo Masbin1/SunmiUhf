@@ -32,7 +32,7 @@ android {
         //noinspection ExpiredTargetSdkVersion
         targetSdkVersion 28
         versionCode 18
-        versionName "1.0.24"
+        versionName "1.0.25"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField "String", "SERVER_URL", "\"${escapedServerUrl}\""

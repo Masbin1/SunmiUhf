@@ -9,9 +9,17 @@ import androidx.recyclerview.widget.RecyclerView
 import com.sunmi.uhf.R
 
 class DeliveryAdapter(
-    private var deliveryList: MutableList<DeliveryItem>,
+    initialList: MutableList<DeliveryItem>,
     private val onItemClick: (DeliveryItem) -> Unit
 ) : RecyclerView.Adapter<DeliveryAdapter.ViewHolder>() {
+
+    private val fullList: MutableList<DeliveryItem> = mutableListOf()
+    private val displayList: MutableList<DeliveryItem> = mutableListOf()
+
+    init {
+        fullList.addAll(initialList)
+        displayList.addAll(initialList)
+    }
 
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val card: CardView = view.findViewById(R.id.cardDelivery)
@@ -27,10 +35,10 @@ class DeliveryAdapter(
         return ViewHolder(view)
     }
 
-    override fun getItemCount(): Int = deliveryList.size
+    override fun getItemCount(): Int = displayList.size
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val item = deliveryList[position]
+        val item = displayList[position]
         holder.name.text = item.name
         holder.partner.text = item.partnerName
         holder.date.text = item.scheduledDate
@@ -40,16 +48,48 @@ class DeliveryAdapter(
 
     // Replace the whole dataset
     fun updateData(newList: List<DeliveryItem>) {
-        deliveryList.clear()
-        deliveryList.addAll(newList)
+        fullList.clear()
+        fullList.addAll(newList)
+
+        displayList.clear()
+        displayList.addAll(newList)
         notifyDataSetChanged()
     }
 
     // Append a page of data
     fun appendData(newList: List<DeliveryItem>) {
         if (newList.isEmpty()) return
-        val start = deliveryList.size
-        deliveryList.addAll(newList)
-        notifyItemRangeInserted(start, newList.size)
+        val startFull = fullList.size
+        fullList.addAll(newList)
+        if (displayList.size == startFull) {
+            val start = displayList.size
+            displayList.addAll(newList)
+            notifyItemRangeInserted(start, newList.size)
+        } else {
+            notifyDataSetChanged()
+        }
+    }
+
+    /**
+     * Filter loaded items by name/partner/state. Case-insensitive contains.
+     */
+    fun filter(query: String) {
+        val q = query.trim()
+        if (q.isEmpty()) {
+            displayList.clear()
+            displayList.addAll(fullList)
+            notifyDataSetChanged()
+            return
+        }
+
+        val lower = q.lowercase()
+        val filtered = fullList.filter { item ->
+            item.name.lowercase().contains(lower)
+                    || item.partnerName.lowercase().contains(lower)
+                    || item.state.lowercase().contains(lower)
+        }
+        displayList.clear()
+        displayList.addAll(filtered)
+        notifyDataSetChanged()
     }
 }

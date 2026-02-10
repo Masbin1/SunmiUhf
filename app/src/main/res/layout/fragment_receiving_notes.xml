@@ -53,6 +53,22 @@
             </LinearLayout>
 <!--        </androidx.cardview.widget.CardView>-->
 
+        <!-- Search Bar -->
+        <androidx.appcompat.widget.AppCompatEditText
+            android:id="@+id/editSearchReceiving"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="8dp"
+            android:hint="Search by name"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:padding="10dp"
+            android:drawableStart="@drawable/ic_search"
+            android:drawablePadding="8dp"
+            android:drawableEnd="@drawable/ic_clear"
+            android:background="@drawable/bg_search_rounded"/>
+
         <!-- RecyclerView Container -->
 
         <androidx.recyclerview.widget.RecyclerView

@@ -21,7 +21,11 @@ import com.sunmi.uhf.fragment.takeinventory.TakeInventoryFragment
 import com.sunmi.uhf.utils.AuthUtils
 import com.sunmi.uhf.service.ApiHelper
 import android.util.Log
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.appcompat.widget.AppCompatEditText
+import android.view.inputmethod.InputMethodManager
 
 class AssetFragment : Fragment() {
 
@@ -31,6 +35,7 @@ class AssetFragment : Fragment() {
     private lateinit var contentLayout: LinearLayout
 
     private lateinit var btnScan: FloatingActionButton
+    private lateinit var editSearch: AppCompatEditText
 
     private var shouldRefreshOnResume = false
     private var selectedUserId: Int? = null
@@ -45,6 +50,13 @@ class AssetFragment : Fragment() {
     // Track already seen item IDs to prevent duplicates when server returns repeated data
     private val seenIds = mutableSetOf<Int>()
 
+    // Search state
+    private var searchJob: Job? = null
+    private var currentQuery: String = ""
+
+    // Job for current load
+    private var loadJob: Job? = null
+
     @SuppressLint("MissingInflatedId")
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -55,6 +67,7 @@ class AssetFragment : Fragment() {
         progressBar = view.findViewById(R.id.progressBarAsset)
         contentLayout = view.findViewById(R.id.contentLayoutAsset)
         btnScan = view.findViewById(R.id.btnScan)
+        editSearch = view.findViewById(R.id.editSearchAsset)
 
         adapter = AssetAdapter(mutableListOf()) { item ->
             val fragment = AssetDetailFragment.newInstance(item)
@@ -84,7 +97,7 @@ class AssetFragment : Fragment() {
                         && firstVisibleItemPosition >= 0
                         && totalItemCount >= pageSize
                     ) {
-                        loadAssetOrders(page = currentPage + 1)
+                        loadAssetOrders(page = currentPage + 1, query = currentQuery)
                     }
                 }
             }
@@ -93,6 +106,29 @@ class AssetFragment : Fragment() {
         btnScan.setOnClickListener {
             fetchAndShowUserDialog()
         }
+
+        // Search listener (debounced) - local filtering + refresh
+        editSearch.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val q = s?.toString()?.trim() ?: ""
+                searchJob?.cancel()
+                searchJob = lifecycleScope.launch {
+                    delay(300)
+                    if (q != currentQuery) {
+                        currentQuery = q
+                        // cancel any in-flight load
+                        loadJob?.cancel()
+                        // reload first page (to refresh data source) then apply local filter
+                        loadAssetOrders(page = 1, query = currentQuery)
+                    } else {
+                        adapter.filter(currentQuery)
+                    }
+                }
+            }
+
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
 
         loadAssetOrders(page = 1)
         return view
@@ -161,12 +197,33 @@ class AssetFragment : Fragment() {
         )
     }
 
-    private fun loadAssetOrders(page: Int = 1) {
-        // show top progress only for first page
+    private fun loadAssetOrders(page: Int = 1, query: String = "") {
+        // cancel previous load
+        loadJob?.cancel()
+
         if (page == 1) {
+            val hadFocus = editSearch.hasFocus()
+            val selPos = try { editSearch.selectionStart.coerceAtLeast(0) } catch (_: Exception) { -1 }
+
+            contentLayout.visibility = View.VISIBLE
+
             progressBar.visibility = View.VISIBLE
-            contentLayout.visibility = View.GONE
-            // clear seen IDs when reloading first page
+            contentLayout.isEnabled = false
+            contentLayout.alpha = 0.6f
+
+            if (hadFocus || currentQuery.isNotBlank()) {
+                editSearch.post {
+                    try {
+                        editSearch.requestFocus()
+                        if (selPos >= 0) {
+                            val length = editSearch.text?.length ?: 0
+                            editSearch.setSelection(selPos.coerceAtMost(length))
+                        }
+                        val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                        imm.showSoftInput(editSearch, InputMethodManager.SHOW_IMPLICIT)
+                    } catch (_: Exception) {}
+                }
+            }
             seenIds.clear()
             isLastPage = false
             currentPage = 1
@@ -175,12 +232,12 @@ class AssetFragment : Fragment() {
         }
 
         isLoading = true
-        lifecycleScope.launch {
+        loadJob = lifecycleScope.launch {
             try {
                 val useCache = page == 1
                 val offset = (page - 1) * pageSize
                 val url = "${AuthUtils.getServerUrl()}/get/asset?offset=$offset&limit=$pageSize"
-                Log.d(TAG, "request url=$url useCache=$useCache page=$page offset=$offset")
+                Log.d(TAG, "request url=$url useCache=$useCache page=$page offset=$offset query=$query")
                 val jsonObject = ApiHelper.getJsonObject(
                     url,
                     useCache = useCache
@@ -205,12 +262,20 @@ class AssetFragment : Fragment() {
                             )
                         )
                     }
-                    Log.d(TAG, "fetched total=${jsonArray.length()} new=${AssetList.size} seenTotal=${seenIds.size}")
 
                     progressBar.visibility = View.GONE
                     contentLayout.visibility = View.VISIBLE
+                    contentLayout.isEnabled = true
+                    contentLayout.alpha = 1f
 
-                    // if no new items were returned for this page, treat as last page
+                    try {
+                        if (editSearch.hasFocus()) {
+                            val pos = editSearch.selectionStart.coerceAtLeast(0)
+                            val length = editSearch.text?.length ?: 0
+                            editSearch.setSelection(pos.coerceAtMost(length))
+                        }
+                    } catch (_: Exception) {}
+
                     if (AssetList.isEmpty() && page > 1) {
                         isLastPage = true
                         isLoading = false
@@ -219,8 +284,10 @@ class AssetFragment : Fragment() {
 
                     if (page == 1) {
                         adapter.updateData(AssetList)
+                        if (currentQuery.isNotBlank()) adapter.filter(currentQuery)
                     } else {
                         adapter.appendData(AssetList)
+                        if (currentQuery.isNotBlank()) adapter.filter(currentQuery)
                     }
 
                     isLoading = false
@@ -235,8 +302,22 @@ class AssetFragment : Fragment() {
                     Toast.makeText(requireContext(), "Failed: ${jsonObject.optString("message")}", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) {
+                    Log.d(TAG, "loadAssetOrders cancelled")
+                    return@launch
+                }
                 isLoading = false
                 progressBar.visibility = View.GONE
+                contentLayout.visibility = View.VISIBLE
+                contentLayout.isEnabled = true
+                contentLayout.alpha = 1f
+                try {
+                    if (editSearch.hasFocus()) {
+                        val pos = editSearch.selectionStart.coerceAtLeast(0)
+                        val length = editSearch.text?.length ?: 0
+                        editSearch.setSelection(pos.coerceAtMost(length))
+                    }
+                } catch (_: Exception) {}
                 Toast.makeText(requireContext(), "Error loading data: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }

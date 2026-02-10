@@ -51,7 +51,7 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
-        <!-- Search bar -->
+        <!-- Search bar (updated to match asset style) -->
         <androidx.appcompat.widget.AppCompatEditText
             android:id="@+id/editSearchProductAsset"
             android:layout_width="match_parent"
@@ -63,11 +63,13 @@
             android:inputType="text"
             android:paddingStart="12dp"
             android:paddingEnd="12dp"
-            android:drawableStart="@android:drawable/ic_menu_search"
+            android:drawableStart="@drawable/ic_search"
             android:drawablePadding="8dp"
-            android:background="@drawable/bg_search"
+            android:drawableEnd="@drawable/ic_clear"
+            android:background="@drawable/bg_search_rounded"
             android:textColorHint="#9AA3AD"
-            android:singleLine="true" />
+            android:singleLine="true"
+            android:gravity="center_vertical" />
 
         <!-- Empty state (hidden by default) -->
         <TextView

@@ -23,6 +23,10 @@ import kotlinx.coroutines.launch
 import androidx.appcompat.widget.AppCompatEditText
 import org.json.JSONArray
 import android.view.inputmethod.InputMethodManager
+import androidx.core.content.ContextCompat
+import android.view.MotionEvent
+import android.content.Context
+import android.graphics.drawable.Drawable
 
 class ProductAssetFragment : Fragment() {
 
@@ -100,11 +104,48 @@ class ProductAssetFragment : Fragment() {
             }
         })
 
+        // Initialize search drawables (no clear icon at start)
+        updateSearchDrawable(showClear = false)
+
+        // handle tapping the clear (drawableEnd)
+        editSearch.setOnTouchListener { v, event ->
+            if (event.action == MotionEvent.ACTION_UP) {
+                val drawables = editSearch.compoundDrawablesRelative
+                // drawableEnd is index 2 when using compoundDrawablesRelative
+                val drawableEnd: Drawable? = if (drawables != null && drawables.size >= 3) drawables[2] else null
+                if (drawableEnd != null) {
+                    val bounds = drawableEnd.bounds
+                    val x = event.x.toInt()
+                    val width = editSearch.width
+                    val paddingEnd = editSearch.paddingEnd
+                    if (x >= width - paddingEnd - bounds.width()) {
+                        // clear text without losing focus
+                        editSearch.setText("")
+                        updateSearchDrawable(showClear = false)
+                        currentQuery = ""
+                        adapter.filter("")
+                        showEmptyIfNeeded()
+                        editSearch.requestFocus()
+                        try {
+                            val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                            imm.showSoftInput(editSearch, InputMethodManager.SHOW_IMPLICIT)
+                        } catch (_: Exception) {}
+                        return@setOnTouchListener true
+                    }
+                }
+            }
+            false
+        }
+
         // Search text listener with debounce
         editSearch.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 val q = s?.toString()?.trim() ?: ""
+
+                // show/hide clear icon immediately
+                updateSearchDrawable(showClear = q.isNotEmpty())
+
                 // cancel previous job
                 searchJob?.cancel()
                 searchJob = lifecycleScope.launch {
@@ -128,6 +169,18 @@ class ProductAssetFragment : Fragment() {
 
         loadProductAssetNotes(page = 1)
         return view
+    }
+
+    // update compound drawables for the search EditText (search icon left, clear icon right optional)
+    private fun updateSearchDrawable(showClear: Boolean) {
+        try {
+            val searchDrawable = ContextCompat.getDrawable(requireContext(), R.drawable.ic_search)
+            val clearDrawable = if (showClear) ContextCompat.getDrawable(requireContext(), R.drawable.ic_clear) else null
+            // use relative to support RTL
+            editSearch.setCompoundDrawablesRelativeWithIntrinsicBounds(searchDrawable, null, clearDrawable, null)
+        } catch (e: Exception) {
+            // ignore drawable errors
+        }
     }
 
     private fun loadProductAssetNotes(page: Int = 1, query: String = "") {

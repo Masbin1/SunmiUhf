@@ -15,7 +15,12 @@ import com.sunmi.uhf.R
 import com.sunmi.uhf.base.BaseActivity
 import com.sunmi.uhf.utils.AuthUtils
 import com.sunmi.uhf.service.ApiHelper
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.appcompat.widget.AppCompatEditText
+import android.view.inputmethod.InputMethodManager
+import android.util.Log
 
 class DeliveryFragment : Fragment() {
 
@@ -23,6 +28,7 @@ class DeliveryFragment : Fragment() {
     private lateinit var progressBar: ProgressBar
     private lateinit var adapter: DeliveryAdapter
     private lateinit var contentLayout: LinearLayout
+    private lateinit var editSearch: AppCompatEditText
 
     // Pagination state
     private var currentPage = 1
@@ -33,6 +39,10 @@ class DeliveryFragment : Fragment() {
     // Track already seen item IDs to prevent duplicates
     private val seenIds = mutableSetOf<Int>()
 
+    private var searchJob: Job? = null
+    private var currentQuery: String = ""
+    private var loadJob: Job? = null
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -41,7 +51,7 @@ class DeliveryFragment : Fragment() {
         recyclerView = view.findViewById(R.id.recyclerViewDelivery)
         progressBar = view.findViewById(R.id.progressBarDelivery)
         contentLayout = view.findViewById(R.id.contentLayoutDelivery)
-
+        editSearch = view.findViewById(R.id.editSearchDelivery)
 
         adapter = DeliveryAdapter(mutableListOf()) { item ->
             val fragment = DeliveryDetailFragment.newInstance(item)
@@ -72,36 +82,77 @@ class DeliveryFragment : Fragment() {
                         && firstVisibleItemPosition >= 0
                         && totalItemCount >= pageSize
                     ) {
-                        loadDeliveryOrders(page = currentPage + 1)
+                        loadDeliveryOrders(page = currentPage + 1, query = currentQuery)
                     }
                 }
             }
+        })
+
+        // Search listener
+        editSearch.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val q = s?.toString()?.trim() ?: ""
+                searchJob?.cancel()
+                searchJob = lifecycleScope.launch {
+                    delay(300)
+                    if (q != currentQuery) {
+                        currentQuery = q
+                        loadJob?.cancel()
+                        loadDeliveryOrders(page = 1, query = currentQuery)
+                    } else {
+                        adapter.filter(currentQuery)
+                    }
+                }
+            }
+
+            override fun afterTextChanged(s: android.text.Editable?) {}
         })
 
         loadDeliveryOrders(page = 1)
         return view
     }
 
-    private fun loadDeliveryOrders(page: Int = 1) {
-        // show top progress only for first page, otherwise show inline loading
+    private fun loadDeliveryOrders(page: Int = 1, query: String = "") {
+        loadJob?.cancel()
+
         if (page == 1) {
+            val hadFocus = editSearch.hasFocus()
+            val selPos = try { editSearch.selectionStart.coerceAtLeast(0) } catch (_: Exception) { -1 }
+
             progressBar.visibility = View.VISIBLE
-            contentLayout.visibility = View.GONE
-            // reset seen ids on fresh load
+            contentLayout.visibility = View.VISIBLE
+            contentLayout.isEnabled = false
+            contentLayout.alpha = 0.6f
+
+            if (hadFocus || currentQuery.isNotBlank()) {
+                editSearch.post {
+                    try {
+                        editSearch.requestFocus()
+                        if (selPos >= 0) {
+                            val length = editSearch.text?.length ?: 0
+                            editSearch.setSelection(selPos.coerceAtMost(length))
+                        }
+                        val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                        imm.showSoftInput(editSearch, InputMethodManager.SHOW_IMPLICIT)
+                    } catch (_: Exception) {}
+                }
+            }
+
             seenIds.clear()
             isLastPage = false
             currentPage = 1
         } else {
-            // optional: show a loading footer. For now reuse progressBar
             progressBar.visibility = View.VISIBLE
         }
 
         isLoading = true
-        lifecycleScope.launch {
+        loadJob = lifecycleScope.launch {
             try {
                 val useCache = page == 1
                 val offset = (page - 1) * pageSize
-                val url = "${AuthUtils.getServerUrl()}/get/stock/picking/delivery?offset=$offset&limit=$pageSize"
+                val queryParam = if (query.isNotBlank()) "&search=${java.net.URLEncoder.encode(query, "UTF-8")}" else ""
+                val url = "${AuthUtils.getServerUrl()}/get/stock/picking/delivery?offset=$offset&limit=$pageSize$queryParam"
                 val jsonObject = ApiHelper.getJsonObject(url, useCache = useCache)
 
                 if (jsonObject.getString("status") == "success") {
@@ -127,8 +178,17 @@ class DeliveryFragment : Fragment() {
 
                     progressBar.visibility = View.GONE
                     contentLayout.visibility = View.VISIBLE
+                    contentLayout.isEnabled = true
+                    contentLayout.alpha = 1f
 
-                    // if no new items were returned for this page, treat as last page
+                    try {
+                        if (editSearch.hasFocus()) {
+                            val pos = editSearch.selectionStart.coerceAtLeast(0)
+                            val length = editSearch.text?.length ?: 0
+                            editSearch.setSelection(pos.coerceAtMost(length))
+                        }
+                    } catch (_: Exception) {}
+
                     if (deliveryList.isEmpty() && page > 1) {
                         isLastPage = true
                         isLoading = false
@@ -137,11 +197,12 @@ class DeliveryFragment : Fragment() {
 
                     if (page == 1) {
                         adapter.updateData(deliveryList)
+                        if (currentQuery.isNotBlank()) adapter.filter(currentQuery)
                     } else {
                         adapter.appendData(deliveryList)
+                        if (currentQuery.isNotBlank()) adapter.filter(currentQuery)
                     }
 
-                    // update pagination state
                     isLoading = false
                     if (deliveryList.size < pageSize) {
                         isLastPage = true
@@ -154,14 +215,30 @@ class DeliveryFragment : Fragment() {
                     Toast.makeText(requireContext(), "Failed: ${jsonObject.optString("message")}", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) {
+                    Log.d(TAG, "loadDeliveryOrders cancelled")
+                    return@launch
+                }
                 isLoading = false
                 progressBar.visibility = View.GONE
+                contentLayout.visibility = View.VISIBLE
+                contentLayout.isEnabled = true
+                contentLayout.alpha = 1f
+                try {
+                    if (editSearch.hasFocus()) {
+                        val pos = editSearch.selectionStart.coerceAtLeast(0)
+                        val length = editSearch.text?.length ?: 0
+                        editSearch.setSelection(pos.coerceAtMost(length))
+                    }
+                } catch (_: Exception) {}
                 Toast.makeText(requireContext(), "Error loading data: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
 
     companion object {
+        private const val TAG = "DeliveryFragment"
+
         fun newInstance(args: Bundle?) = DeliveryFragment()
             .apply { arguments = args }
     }
