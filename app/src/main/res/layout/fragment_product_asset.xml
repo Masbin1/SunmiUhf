@@ -51,14 +51,14 @@
                     android:textStyle="bold" />
             </LinearLayout>
 
-        <!-- Search bar (updated to match asset style) -->
+        <!-- Search bar -->
         <androidx.appcompat.widget.AppCompatEditText
             android:id="@+id/editSearchProductAsset"
             android:layout_width="match_parent"
-            android:layout_height="40dp"
+            android:layout_height="44dp"
             android:layout_marginTop="12dp"
-            android:layout_marginBottom="8dp"
-            android:hint="Search by name"
+            android:layout_marginBottom="4dp"
+            android:hint="Search asset name or code..."
             android:imeOptions="actionSearch"
             android:inputType="text"
             android:paddingStart="12dp"
@@ -67,19 +67,33 @@
             android:drawablePadding="8dp"
             android:drawableEnd="@drawable/ic_clear"
             android:background="@drawable/bg_search_rounded"
+            android:textColor="#1E1E1E"
             android:textColorHint="#9AA3AD"
+            android:textSize="14sp"
             android:singleLine="true"
             android:gravity="center_vertical" />
+
+        <!-- Search Inline Loading Indicator (subtle, non-blocking) -->
+        <ProgressBar
+            android:id="@+id/progressBarSearchProductAsset"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:layout_marginBottom="4dp"
+            android:indeterminate="true"
+            android:indeterminateTint="#4A90E2"
+            android:visibility="invisible" />
 
         <!-- Empty state (hidden by default) -->
         <TextView
             android:id="@+id/txtEmptyProductAsset"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="24dp"
             android:gravity="center"
-            android:text="No products found"
-            android:textColor="#777777"
+            android:text="No assets found"
+            android:textColor="#888888"
+            android:textSize="15sp"
             android:visibility="gone" />
 
         <!-- RecyclerView Container -->
