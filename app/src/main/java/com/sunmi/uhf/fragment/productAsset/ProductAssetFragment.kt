@@ -29,6 +29,7 @@ import android.content.Context
 import android.graphics.drawable.Drawable
 import android.view.KeyEvent
 import android.view.inputmethod.EditorInfo
+import android.os.Parcelable
 
 class ProductAssetFragment : Fragment() {
 
@@ -39,6 +40,11 @@ class ProductAssetFragment : Fragment() {
     private lateinit var contentLayout: LinearLayout
     private lateinit var editSearch: AppCompatEditText
     private lateinit var txtEmpty: android.widget.TextView
+
+    // In-memory cache of loaded items & scroll state so back navigation does not reload
+    private val cachedItems = mutableListOf<ProductAssetItem>()
+    private var recyclerViewState: Parcelable? = null
+    private var isRestoringState = false
 
     // Pagination state
     private var currentPage = 1
@@ -74,7 +80,7 @@ class ProductAssetFragment : Fragment() {
         txtEmpty.visibility = View.GONE
         recyclerView.visibility = View.VISIBLE
 
-        adapter = ProductAssetAdapter(mutableListOf()) { item ->
+        adapter = ProductAssetAdapter(cachedItems.toMutableList()) { item ->
             val fragment = ProductAssetDetailFragment.newInstance(item)
             (activity as? BaseActivity<*>)?.switchFragment(
                 fragment,
@@ -169,6 +175,7 @@ class ProductAssetFragment : Fragment() {
         editSearch.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                if (isRestoringState) return
                 val q = s?.toString()?.trim() ?: ""
 
                 // Show/hide clear icon immediately
@@ -193,7 +200,24 @@ class ProductAssetFragment : Fragment() {
             override fun afterTextChanged(s: android.text.Editable?) {}
         })
 
-        loadProductAssetNotes(page = 1)
+        if (cachedItems.isNotEmpty()) {
+            isRestoringState = true
+            if (currentQuery.isNotEmpty()) {
+                editSearch.setText(currentQuery)
+                editSearch.setSelection(currentQuery.length)
+                updateSearchDrawable(showClear = true)
+                adapter.filter(currentQuery)
+            }
+            showEmptyIfNeeded()
+            recyclerViewState?.let {
+                recyclerView.post {
+                    layoutManager.onRestoreInstanceState(it)
+                }
+            }
+            isRestoringState = false
+        } else {
+            loadProductAssetNotes(page = 1)
+        }
         return view
     }
 
@@ -302,6 +326,8 @@ class ProductAssetFragment : Fragment() {
                 } else {
                     adapter.appendData(productAssetList, currentQuery)
                 }
+                cachedItems.clear()
+                cachedItems.addAll(adapter.getFullList())
 
                 isLoading = false
                 if (productAssetList.size < pageSize) {
@@ -323,6 +349,15 @@ class ProductAssetFragment : Fragment() {
                 showEmptyIfNeeded()
                 Toast.makeText(requireContext(), "Error loading data: ${e.message}", Toast.LENGTH_LONG).show()
             }
+        }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        recyclerViewState = recyclerView.layoutManager?.onSaveInstanceState()
+        if (::adapter.isInitialized) {
+            cachedItems.clear()
+            cachedItems.addAll(adapter.getFullList())
         }
     }
 

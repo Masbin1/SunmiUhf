@@ -22,6 +22,8 @@ class ProductAssetAdapter(
         displayList.addAll(initialList)
     }
 
+    fun getFullList(): List<ProductAssetItem> = fullList
+
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val card: CardView = view.findViewById(R.id.cardProductAsset)
         val name: TextView = view.findViewById(R.id.txtAssetName)
