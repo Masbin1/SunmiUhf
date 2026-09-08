@@ -27,15 +27,24 @@ import androidx.core.content.ContextCompat
 import android.view.MotionEvent
 import android.content.Context
 import android.graphics.drawable.Drawable
+import android.view.KeyEvent
+import android.view.inputmethod.EditorInfo
+import android.os.Parcelable
 
 class ProductAssetFragment : Fragment() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
+    private lateinit var progressBarSearch: ProgressBar
     private lateinit var adapter: ProductAssetAdapter
     private lateinit var contentLayout: LinearLayout
     private lateinit var editSearch: AppCompatEditText
     private lateinit var txtEmpty: android.widget.TextView
+
+    // In-memory cache of loaded items & scroll state so back navigation does not reload
+    private val cachedItems = mutableListOf<ProductAssetItem>()
+    private var recyclerViewState: Parcelable? = null
+    private var isRestoringState = false
 
     // Pagination state
     private var currentPage = 1
@@ -61,16 +70,17 @@ class ProductAssetFragment : Fragment() {
 
         recyclerView = view.findViewById(recyclerViewProductAsset)
         progressBar = view.findViewById(R.id.progressBarProductAsset)
+        progressBarSearch = view.findViewById(R.id.progressBarSearchProductAsset)
         contentLayout = view.findViewById(R.id.contentLayoutProductAsset)
         editSearch = view.findViewById(R.id.editSearchProductAsset)
         txtEmpty = view.findViewById(R.id.txtEmptyProductAsset)
 
-        // make sure content is visible immediately (layout default may be GONE)
+        // Make sure content is visible immediately
         contentLayout.visibility = View.VISIBLE
         txtEmpty.visibility = View.GONE
         recyclerView.visibility = View.VISIBLE
 
-        adapter = ProductAssetAdapter(mutableListOf()) { item ->
+        adapter = ProductAssetAdapter(cachedItems.toMutableList()) { item ->
             val fragment = ProductAssetDetailFragment.newInstance(item)
             (activity as? BaseActivity<*>)?.switchFragment(
                 fragment,
@@ -83,7 +93,7 @@ class ProductAssetFragment : Fragment() {
         recyclerView.layoutManager = layoutManager
         recyclerView.adapter = adapter
 
-        // add scroll listener for pagination
+        // Scroll listener for pagination
         recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(rv, dx, dy)
@@ -107,29 +117,53 @@ class ProductAssetFragment : Fragment() {
         // Initialize search drawables (no clear icon at start)
         updateSearchDrawable(showClear = false)
 
-        // handle tapping the clear (drawableEnd)
-        editSearch.setOnTouchListener { v, event ->
+        // Keyboard "Search" or hardware Enter action listener
+        editSearch.setOnEditorActionListener { _, actionId, event ->
+            if (actionId == EditorInfo.IME_ACTION_SEARCH ||
+                (event != null && event.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN)
+            ) {
+                val q = editSearch.text?.toString()?.trim() ?: ""
+
+                // 1. Immediate local filter
+                adapter.filter(q)
+                showEmptyIfNeeded()
+
+                // 2. Immediate server request
+                searchJob?.cancel()
+                if (q != currentQuery) {
+                    currentQuery = q
+                    loadJob?.cancel()
+                    loadProductAssetNotes(page = 1, query = currentQuery)
+                }
+
+                // Dismiss soft keyboard
+                val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+                imm?.hideSoftInputFromWindow(editSearch.windowToken, 0)
+                true
+            } else {
+                false
+            }
+        }
+
+        // Handle tapping the clear icon (drawableEnd)
+        editSearch.setOnTouchListener { _, event ->
             if (event.action == MotionEvent.ACTION_UP) {
                 val drawables = editSearch.compoundDrawablesRelative
-                // drawableEnd is index 2 when using compoundDrawablesRelative
                 val drawableEnd: Drawable? = if (drawables != null && drawables.size >= 3) drawables[2] else null
-                if (drawableEnd != null) {
-                    val bounds = drawableEnd.bounds
-                    val x = event.x.toInt()
-                    val width = editSearch.width
-                    val paddingEnd = editSearch.paddingEnd
-                    if (x >= width - paddingEnd - bounds.width()) {
-                        // clear text without losing focus
+                if (drawableEnd != null && editSearch.text?.isNotEmpty() == true) {
+                    val iconWidth = drawableEnd.intrinsicWidth.coerceAtLeast(48)
+                    val extraTouchPadding = 24
+                    val touchTargetMinX = editSearch.width - editSearch.paddingEnd - iconWidth - extraTouchPadding
+                    if (event.x >= touchTargetMinX) {
+                        // Clear text and reload all assets from server
                         editSearch.setText("")
                         updateSearchDrawable(showClear = false)
+                        searchJob?.cancel()
+                        loadJob?.cancel()
                         currentQuery = ""
                         adapter.filter("")
                         showEmptyIfNeeded()
-                        editSearch.requestFocus()
-                        try {
-                            val imm = requireContext().getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                            imm.showSoftInput(editSearch, InputMethodManager.SHOW_IMPLICIT)
-                        } catch (_: Exception) {}
+                        loadProductAssetNotes(page = 1, query = "")
                         return@setOnTouchListener true
                     }
                 }
@@ -137,29 +171,28 @@ class ProductAssetFragment : Fragment() {
             false
         }
 
-        // Search text listener with debounce
+        // Live typing listener: immediate local filter (0ms) + debounced server query
         editSearch.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                if (isRestoringState) return
                 val q = s?.toString()?.trim() ?: ""
 
-                // show/hide clear icon immediately
+                // Show/hide clear icon immediately
                 updateSearchDrawable(showClear = q.isNotEmpty())
 
-                // cancel previous job
+                // 1. Instant local filter for immediate responsiveness (0ms latency!)
+                adapter.filter(q)
+                showEmptyIfNeeded()
+
+                // 2. Debounced server-side query
                 searchJob?.cancel()
                 searchJob = lifecycleScope.launch {
-                    delay(300) // debounce
-                    // if query changed, reset pagination and reload from page 1 with query
+                    delay(350) // 350ms debounce for server query
                     if (q != currentQuery) {
                         currentQuery = q
-                        // cancel any in-flight load (network) before starting a new one
                         loadJob?.cancel()
                         loadProductAssetNotes(page = 1, query = currentQuery)
-                    } else {
-                        // If same query but we want local filtering (e.g., when server doesn't support search), apply filter
-                        adapter.filter(currentQuery)
-                        showEmptyIfNeeded()
                     }
                 }
             }
@@ -167,16 +200,32 @@ class ProductAssetFragment : Fragment() {
             override fun afterTextChanged(s: android.text.Editable?) {}
         })
 
-        loadProductAssetNotes(page = 1)
+        if (cachedItems.isNotEmpty()) {
+            isRestoringState = true
+            if (currentQuery.isNotEmpty()) {
+                editSearch.setText(currentQuery)
+                editSearch.setSelection(currentQuery.length)
+                updateSearchDrawable(showClear = true)
+                adapter.filter(currentQuery)
+            }
+            showEmptyIfNeeded()
+            recyclerViewState?.let {
+                recyclerView.post {
+                    layoutManager.onRestoreInstanceState(it)
+                }
+            }
+            isRestoringState = false
+        } else {
+            loadProductAssetNotes(page = 1)
+        }
         return view
     }
 
-    // update compound drawables for the search EditText (search icon left, clear icon right optional)
+    // Update compound drawables for the search EditText (search icon left, clear icon right)
     private fun updateSearchDrawable(showClear: Boolean) {
         try {
             val searchDrawable = ContextCompat.getDrawable(requireContext(), R.drawable.ic_search)
             val clearDrawable = if (showClear) ContextCompat.getDrawable(requireContext(), R.drawable.ic_clear) else null
-            // use relative to support RTL
             editSearch.setCompoundDrawablesRelativeWithIntrinsicBounds(searchDrawable, null, clearDrawable, null)
         } catch (e: Exception) {
             // ignore drawable errors
@@ -184,82 +233,56 @@ class ProductAssetFragment : Fragment() {
     }
 
     private fun loadProductAssetNotes(page: Int = 1, query: String = "") {
-        // cancel any previous load job
+        // Cancel any previous load job
         loadJob?.cancel()
 
-        // show top progress only for first page
         if (page == 1) {
-            // Keep content visible so search EditText doesn't lose focus.
-            // Show a progress indicator overlay and dim/disable the content to indicate loading.
-            // Preserve current focus + cursor position so the user can continue typing smoothly.
-            val hadFocus = editSearch.hasFocus()
-            val selPos = try { editSearch.selectionStart.coerceAtLeast(0) } catch (_: Exception) { -1 }
-
-            // make sure content is visible (was previously 'gone' in layout by default)
-            contentLayout.visibility = View.VISIBLE
-
-            progressBar.visibility = View.VISIBLE
-            contentLayout.isEnabled = false
-            contentLayout.alpha = 0.6f
-
-            // Only restore focus/keyboard if the user already had focus in the search field
-            // or if there is an active query (user expects to type)
-            if (hadFocus || currentQuery.isNotBlank()) {
-                editSearch.post {
-                    try {
-                        editSearch.requestFocus()
-                        if (selPos >= 0) {
-                            val length = editSearch.text?.length ?: 0
-                            editSearch.setSelection(selPos.coerceAtMost(length))
-                        }
-                        val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                        imm.showSoftInput(editSearch, InputMethodManager.SHOW_IMPLICIT)
-                    } catch (_: Exception) {
-                    }
-                }
-            }
-            // clear seen IDs when reloading first page
             seenIds.clear()
             isLastPage = false
             currentPage = 1
+
+            if (query.isNotBlank()) {
+                // When searching, show subtle inline progress bar without blocking the UI
+                progressBarSearch.visibility = View.VISIBLE
+                progressBar.visibility = View.GONE
+            } else {
+                // Initial full-page load
+                progressBar.visibility = View.VISIBLE
+                progressBarSearch.visibility = View.INVISIBLE
+            }
         } else {
-            progressBar.visibility = View.VISIBLE
+            // Subsequent pages
+            progressBarSearch.visibility = View.VISIBLE
         }
 
         isLoading = true
         loadJob = lifecycleScope.launch {
             try {
-                // disable cache for subsequent pages to avoid stale repeated responses
-                // If a search query is present, don't use cache even for page 1
+                // Disable cache for searches or subsequent pages to ensure real-time server query
                 val useCache = page == 1 && query.isBlank()
                 val offset = (page - 1) * pageSize
                 Log.d(TAG, "request page=$page offset=$offset useCache=$useCache query=$query")
 
-                // include search query if present (URL-encode)
+                // Direct server-side query parameter
                 val queryParam = if (query.isNotBlank()) "&search=${java.net.URLEncoder.encode(query, "UTF-8")}" else ""
                 val url = "${AuthUtils.getServerUrl()}/get/product/asset/?offset=$offset&limit=$pageSize$queryParam"
 
-                // Try to fetch a JSON object first; if server returns an array or a raw array string, fall back to getJsonArray
+                // Try to fetch a JSON object first; if server returns an array or raw array string, fall back to getJsonArray
                 val jsonArray: JSONArray = try {
                     val obj = ApiHelper.getJsonObject(url, useCache)
-                    // If the object contains explicit status + assets
                     if (obj.optString("status").isNotEmpty()) {
                         if (obj.optString("status") == "success") {
                             obj.optJSONArray("assets") ?: obj.optJSONArray("data") ?: JSONArray()
                         } else {
-                            // server returned failure status
-                            throw Exception("Failed: ${obj.optString("message")} ")
+                            throw Exception("Failed: ${obj.optString("message")}")
                         }
                     } else {
-                        // no status field; try to extract arrays commonly named
                         obj.optJSONArray("assets") ?: obj.optJSONArray("data") ?: JSONArray()
                     }
                 } catch (eObj: Exception) {
-                    // as a fallback, try to parse as array directly
                     try {
                         ApiHelper.getJsonArray(url, useCache)
                     } catch (_: Exception) {
-                        // propagate original error if both attempts fail
                         throw eObj
                     }
                 }
@@ -269,12 +292,10 @@ class ProductAssetFragment : Fragment() {
                 for (i in 0 until jsonArray.length()) {
                     val obj = jsonArray.getJSONObject(i)
                     val id = obj.getInt("id")
-                    // skip items we've already seen to avoid duplicates
                     if (seenIds.contains(id)) continue
 
                     seenIds.add(id)
 
-                    // Defensive extraction of product name — backend may return product_id as string or object
                     val productName = extractProductName(obj)
 
                     productAssetList.add(
@@ -289,23 +310,11 @@ class ProductAssetFragment : Fragment() {
                 }
                 Log.d(TAG, "fetched total=${jsonArray.length()} new=${productAssetList.size} seenTotal=${seenIds.size}")
 
-                // restore content interactivity and hide progress
                 progressBar.visibility = View.GONE
-                // ensure visible (in case it was GONE initially)
+                progressBarSearch.visibility = View.INVISIBLE
                 contentLayout.visibility = View.VISIBLE
-                 contentLayout.isEnabled = true
-                 contentLayout.alpha = 1f
 
-                // if search is focused, ensure cursor position remains reasonable
-                try {
-                    if (editSearch.hasFocus()) {
-                        val pos = editSearch.selectionStart.coerceAtLeast(0)
-                        val length = editSearch.text?.length ?: 0
-                        editSearch.setSelection(pos.coerceAtMost(length))
-                    }
-                } catch (_: Exception) { }
-
-                // if no new items were returned for this page, treat as last page
+                // If no new items returned for page > 1, mark as last page
                 if (productAssetList.isEmpty() && page > 1) {
                     isLastPage = true
                     isLoading = false
@@ -313,14 +322,12 @@ class ProductAssetFragment : Fragment() {
                 }
 
                 if (page == 1) {
-                    adapter.updateData(productAssetList)
-                    // apply local filter immediately if user has a query
-                    if (currentQuery.isNotBlank()) adapter.filter(currentQuery)
+                    adapter.updateData(productAssetList, currentQuery)
                 } else {
-                    adapter.appendData(productAssetList)
-                    // when appending, if there's an active query we should re-filter so new items are considered
-                    if (currentQuery.isNotBlank()) adapter.filter(currentQuery)
+                    adapter.appendData(productAssetList, currentQuery)
                 }
+                cachedItems.clear()
+                cachedItems.addAll(adapter.getFullList())
 
                 isLoading = false
                 if (productAssetList.size < pageSize) {
@@ -329,30 +336,28 @@ class ProductAssetFragment : Fragment() {
                     currentPage = page
                 }
 
-                // show/hide empty view
                 showEmptyIfNeeded()
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) {
-                    // request was cancelled intentionally; don't show error to user
                     Log.d(TAG, "loadProductAssetNotes cancelled")
                     return@launch
                 }
                 isLoading = false
-                // make sure UI restored on error
                 progressBar.visibility = View.GONE
-                // ensure visible on error as well (don't leave it GONE)
+                progressBarSearch.visibility = View.INVISIBLE
                 contentLayout.visibility = View.VISIBLE
-                 contentLayout.isEnabled = true
-                 contentLayout.alpha = 1f
-                try {
-                    if (editSearch.hasFocus()) {
-                        val pos = editSearch.selectionStart.coerceAtLeast(0)
-                        val length = editSearch.text?.length ?: 0
-                        editSearch.setSelection(pos.coerceAtMost(length))
-                    }
-                } catch (_: Exception) { }
+                showEmptyIfNeeded()
                 Toast.makeText(requireContext(), "Error loading data: ${e.message}", Toast.LENGTH_LONG).show()
             }
+        }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        recyclerViewState = recyclerView.layoutManager?.onSaveInstanceState()
+        if (::adapter.isInitialized) {
+            cachedItems.clear()
+            cachedItems.addAll(adapter.getFullList())
         }
     }
 
@@ -375,10 +380,18 @@ class ProductAssetFragment : Fragment() {
                 return prodObj.optString("display_name", prodObj.optString("name", "-"))
             }
 
-            // 2) or it might be provided as a simple string like "123: Product Name" or just "Product Name"
+            // 2) or it might be provided as a string (possibly serialized JSON like {"id":4281,"display_name":"TOOLS"})
             val prodStr = json.optString("product_id", json.optString("product", "")).trim()
             if (prodStr.isNotEmpty()) {
-                // if it contains a colon like "123: Name", take the part after colon
+                if (prodStr.startsWith("{")) {
+                    try {
+                        val parsed = org.json.JSONObject(prodStr)
+                        val displayName = parsed.optString("display_name", parsed.optString("name", ""))
+                        if (displayName.isNotEmpty()) return displayName
+                    } catch (_: Exception) { }
+                }
+
+                // If it contains a colon like "123: Name", take the part after colon
                 val parts = prodStr.split(":", limit = 2).map { it.trim() }
                 return if (parts.size == 2) parts[1] else parts[0]
             }

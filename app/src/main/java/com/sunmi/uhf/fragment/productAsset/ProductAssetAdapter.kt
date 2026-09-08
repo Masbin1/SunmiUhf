@@ -22,6 +22,8 @@ class ProductAssetAdapter(
         displayList.addAll(initialList)
     }
 
+    fun getFullList(): List<ProductAssetItem> = fullList
+
     class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val card: CardView = view.findViewById(R.id.cardProductAsset)
         val name: TextView = view.findViewById(R.id.txtAssetName)
@@ -58,56 +60,63 @@ class ProductAssetAdapter(
             .start()
     }
 
-    fun updateData(newList: List<ProductAssetItem>) {
+    fun updateData(newList: List<ProductAssetItem>, query: String = "") {
         fullList.clear()
         fullList.addAll(newList)
 
         displayList.clear()
-        displayList.addAll(newList)
+        val q = query.trim()
+        if (q.isEmpty()) {
+            displayList.addAll(newList)
+        } else {
+            val lower = q.lowercase()
+            displayList.addAll(fullList.filter { itemMatchesQuery(it, lower) })
+        }
         notifyDataSetChanged()
     }
 
-    fun appendData(newList: List<ProductAssetItem>) {
+    fun appendData(newList: List<ProductAssetItem>, query: String = "") {
         if (newList.isEmpty()) return
-        // add to master list
-        val startFull = fullList.size
         fullList.addAll(newList)
-        // if not currently filtered (displayList mirrors fullList) append to display
-        if (displayList.size == startFull) {
+
+        val q = query.trim()
+        if (q.isEmpty()) {
             val start = displayList.size
             displayList.addAll(newList)
             notifyItemRangeInserted(start, newList.size)
         } else {
-            // If user has an active filter, keep displayList as filtered subset; do not automatically add
-            // but keep fullList updated so future filtering includes new items
-            // notify that data changed so caller can re-filter if desired
-            notifyDataSetChanged()
+            val lower = q.lowercase()
+            val matches = newList.filter { itemMatchesQuery(it, lower) }
+            if (matches.isNotEmpty()) {
+                val start = displayList.size
+                displayList.addAll(matches)
+                notifyItemRangeInserted(start, matches.size)
+            }
         }
     }
 
     /**
-     * Filter the currently loaded items by name (case-insensitive contains).
+     * Filter the currently loaded items by query (case-insensitive contains).
      * If query is blank, restores the full list.
      */
     fun filter(query: String) {
         val q = query.trim()
-        if (q.isEmpty()) {
-            displayList.clear()
-            displayList.addAll(fullList)
-            notifyDataSetChanged()
-            return
-        }
-
-        val lower = q.lowercase()
-        // Search across multiple fields so users can search by asset name, product name, code or category
-        val filtered = fullList.filter { item ->
-            item.name.lowercase().contains(lower)
-                    || item.productName.lowercase().contains(lower)
-                    || item.assetCode.lowercase().contains(lower)
-                    || item.assetCategory.lowercase().contains(lower)
-        }
         displayList.clear()
-        displayList.addAll(filtered)
+        if (q.isEmpty()) {
+            displayList.addAll(fullList)
+        } else {
+            val lower = q.lowercase()
+            displayList.addAll(fullList.filter { itemMatchesQuery(it, lower) })
+        }
         notifyDataSetChanged()
+    }
+
+    private fun itemMatchesQuery(item: ProductAssetItem, lower: String): Boolean {
+        return item.name.lowercase().contains(lower)
+                || item.productName.lowercase().contains(lower)
+                || item.assetCode.lowercase().contains(lower)
+                || item.assetCategory.lowercase().contains(lower)
+                || item.serialNo.lowercase().contains(lower)
+                || item.rfid.lowercase().contains(lower)
     }
 }
